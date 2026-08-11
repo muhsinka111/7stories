@@ -7,6 +7,8 @@ import { AudienceKey } from "./audiences";
 import { PlotKey } from "./plots";
 import { GeneratedStory } from "./story";
 
+export type StoryStatus = "draft" | "published";
+
 export interface SavedStory {
   id: string;
   createdAt: string;
@@ -15,6 +17,8 @@ export interface SavedStory {
   plotKey: PlotKey;
   title: string;
   facts: string;
+  tone?: "professional" | "warm" | "bold" | "empathetic";
+  status?: StoryStatus;
   story: GeneratedStory;
 }
 
@@ -45,6 +49,14 @@ export function saveStory(
 
 export function deleteStory(id: string): SavedStory[] {
   const library = loadLibrary().filter((s) => s.id !== id);
+  persist(library);
+  return library;
+}
+
+export function updateStory(id: string, patch: Partial<SavedStory>): SavedStory[] {
+  const library = loadLibrary().map((s) =>
+    s.id === id ? { ...s, ...patch, updatedAt: new Date().toISOString() } : s
+  );
   persist(library);
   return library;
 }

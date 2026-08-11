@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PLOTS } from "@/lib/plots";
 import { AUDIENCES } from "@/lib/audiences";
 import type { AudienceKey } from "@/lib/audiences";
@@ -10,32 +10,95 @@ import {
   loadLibrary,
   saveStory,
   deleteStory,
+  updateStory,
   newId,
   SavedStory,
+  StoryStatus,
 } from "@/lib/library";
+
+const TONES = [
+  { key: "professional", label: "Professional" },
+  { key: "warm", label: "Warm" },
+  { key: "bold", label: "Bold" },
+  { key: "empathetic", label: "Empathetic" },
+] as const;
 
 type View =
   | { name: "library" }
   | { name: "new" }
   | { name: "view"; id: string };
 
+type DisplayMode = "grid" | "table";
+
+interface Filters {
+  search: string;
+  audience?: AudienceKey;
+  plotKey?: PlotKey;
+  tone?: string;
+  status?: StoryStatus;
+  sort: "newest" | "oldest" | "az";
+}
+
+const DEFAULT_FILTERS: Filters = {
+  search: "",
+  sort: "newest",
+};
+
 export default function Dashboard() {
   const [library, setLibrary] = useState<SavedStory[]>([]);
   const [view, setView] = useState<View>({ name: "library" });
-  const [filters, setFilters] = useState<{ audience?: AudienceKey }>({});
+  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [mode, setMode] = useState<DisplayMode>("grid");
 
   useEffect(() => {
     setLibrary(loadLibrary());
   }, []);
 
-  const shown = filters.audience
-    ? library.filter((s) => s.audience === filters.audience)
-    : library;
+  const stats = useMemo(() => {
+    const byAudience: Record<string, number> = {};
+    AUDIENCES.forEach((a) => (byAudience[a.key] = 0));
+    library.forEach((s) => {
+      byAudience[s.audience] = (byAudience[s.audience] ?? 0) + 1;
+    });
+    return {
+      total: library.length,
+      published: library.filter((s) => s.status === "published").length,
+      drafts: library.filter((s) => s.status !== "published").length,
+      byAudience,
+    };
+  }, [library]);
+
+  const shown = useMemo(() => {
+    let list = [...library];
+    if (filters.search.trim()) {
+      const q = filters.search.trim().toLowerCase();
+      list = list.filter(
+        (s) =>
+          s.story.title.toLowerCase().includes(q) ||
+          s.story.hook.toLowerCase().includes(q) ||
+          s.facts.toLowerCase().includes(q)
+      );
+    }
+    if (filters.audience) list = list.filter((s) => s.audience === filters.audience);
+    if (filters.plotKey) list = list.filter((s) => s.plotKey === filters.plotKey);
+    if (filters.tone) list = list.filter((s) => (s.tone ?? "professional") === filters.tone);
+    if (filters.status) list = list.filter((s) => (s.status ?? "draft") === filters.status);
+
+    switch (filters.sort) {
+      case "oldest":
+        list.sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt));
+        break;
+      case "az":
+        list.sort((a, b) => a.story.title.localeCompare(b.story.title));
+        break;
+      default:
+        list.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+    }
+    return list;
+  }, [library, filters]);
 
   const activeStory =
-    view.name === "view"
-      ? library.find((s) => s.id === view.id)
-      : undefined;
+    view.name === "view" ? library.find((s) => s.id === view.id) : undefined;
 
   return (
     <div className="flex min-h-screen bg-[--bg]">
@@ -51,7 +114,7 @@ export default function Dashboard() {
         <nav className="space-y-1 flex-1">
           <button
             onClick={() => {
-              setFilters({});
+              setFilters(DEFAULT_FILTERS);
               setView({ name: "library" });
             }}
             className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
@@ -70,7 +133,7 @@ export default function Dashboard() {
             <button
               key={a.key}
               onClick={() => {
-                setFilters({ audience: a.key });
+                setFilters((f) => ({ ...f, audience: a.key }));
                 setView({ name: "library" });
               }}
               className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 ${
@@ -80,6 +143,9 @@ export default function Dashboard() {
               }`}
             >
               <span>{a.emoji}</span> {a.label}
+              <span className="ml-auto text-xs text-[--muted]/60">
+                {stats.byAudience[a.key] ?? 0}
+              </span>
             </button>
           ))}
         </nav>
@@ -107,6 +173,7 @@ export default function Dashboard() {
           <StoryViewer
             story={activeStory}
             onBack={() => setView({ name: "library" })}
+            onStatus={(id, status) => setLibrary(updateStory(id, { status }))}
             onDelete={(id) => {
               setLibrary(deleteStory(id));
               setView({ name: "library" });
@@ -118,6 +185,10 @@ export default function Dashboard() {
           <Library
             stories={shown}
             filters={filters}
+            stats={stats}
+            mode={mode}
+            onFilters={setFilters}
+            onMode={setMode}
             onOpen={(id) => setView({ name: "view", id })}
             onNew={() => setView({ name: "new" })}
           />
@@ -127,95 +198,332 @@ export default function Dashboard() {
   );
 }
 
-/* ───────────── Library ───────────── */
+/* ───────────── KPI + Library ───────────── */
 
 function Library({
   stories,
   filters,
+  stats,
+  mode,
+  onFilters,
+  onMode,
   onOpen,
   onNew,
 }: {
   stories: SavedStory[];
-  filters: { audience?: AudienceKey };
+  filters: Filters;
+  stats: { total: number; published: number; drafts: number; byAudience: Record<string, number> };
+  mode: DisplayMode;
+  onFilters: (f: Filters) => void;
+  onMode: (m: DisplayMode) => void;
   onOpen: (id: string) => void;
   onNew: () => void;
 }) {
-  const aud = AUDIENCES.find((a) => a.key === filters.audience);
+  const activeFilters =
+    filters.audience || filters.plotKey || filters.tone || filters.status || filters.search;
+
   return (
-    <div>
-      <div className="flex items-end justify-between mb-8">
+    <div className="max-w-6xl">
+      {/* KPI row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <Kpi label="Total stories" value={stats.total} accent />
+        <Kpi label="Published" value={stats.published} />
+        <Kpi label="Drafts" value={stats.drafts} />
+        <Kpi label="Active arcs" value={new Set(stories.map((s) => s.plotKey)).size} />
+      </div>
+
+      {/* Header */}
+      <div className="flex items-end justify-between mb-5">
         <div>
           <h1 className="text-3xl font-black tracking-tight">
-            {aud ? `${aud.emoji} ${aud.label} stories` : "Your stories"}
+            Story library
           </h1>
           <p className="text-[--muted] mt-1">
-            {stories.length} saved {stories.length === 1 ? "story" : "stories"}
+            {stories.length} {stories.length === 1 ? "story" : "stories"}
+            {activeFilters ? " · filtered" : ""}
           </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onMode("grid")}
+            className={`px-3 py-1.5 rounded-lg text-sm border ${
+              mode === "grid" ? "border-[--accent] bg-amber-400/10" : "border-[--border]"
+            }`}
+          >
+            Grid
+          </button>
+          <button
+            onClick={() => onMode("table")}
+            className={`px-3 py-1.5 rounded-lg text-sm border ${
+              mode === "table" ? "border-[--accent] bg-amber-400/10" : "border-[--border]"
+            }`}
+          >
+            Table
+          </button>
         </div>
       </div>
 
+      {/* Filter bar */}
+      <FilterBar filters={filters} onChange={onFilters} />
+
       {stories.length === 0 ? (
-        <EmptyState hasFilter={!!aud} onNew={onNew} />
-      ) : (
+        <EmptyState hasFilter={!!activeFilters} onNew={onNew} onClear={() => onFilters(DEFAULT_FILTERS)} />
+      ) : mode === "grid" ? (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {stories.map((s) => {
-            const a = AUDIENCES.find((x) => x.key === s.audience);
-            const p = PLOTS.find((x) => x.key === s.plotKey);
-            return (
-              <button
-                key={s.id}
-                onClick={() => onOpen(s.id)}
-                className="card p-6 text-left hover:border-[--accent]/60 transition-colors group"
-              >
-                <div className="flex items-center gap-2 text-xs text-[--muted] mb-3">
-                  <span>{a?.emoji}</span>
-                  <span className="uppercase tracking-wider">{a?.label}</span>
-                  <span className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                    open →
-                  </span>
-                </div>
-                <h3 className="font-bold text-lg leading-snug mb-2">
-                  {s.story.title}
-                </h3>
-                <p className="text-sm text-[--muted] line-clamp-3">
-                  {s.story.hook}
-                </p>
-                <div className="mt-4 flex items-center gap-2">
-                  <span className="chip">{p?.emoji} {p?.title}</span>
-                  <span className="text-xs text-[--muted] ml-auto">
-                    {new Date(s.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
+          {stories.map((s) => (
+            <StoryCard key={s.id} s={s} onOpen={() => onOpen(s.id)} />
+          ))}
         </div>
+      ) : (
+        <StoryTable stories={stories} onOpen={onOpen} />
       )}
     </div>
   );
 }
 
+function Kpi({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
+  return (
+    <div className="card p-5">
+      <p className="text-xs uppercase tracking-widest text-[--muted]">{label}</p>
+      <p className={`text-3xl font-black mt-2 ${accent ? "amber-grad" : ""}`}>{value}</p>
+    </div>
+  );
+}
+
+function FilterBar({ filters, onChange }: { filters: Filters; onChange: (f: Filters) => void }) {
+  const set = (patch: Partial<Filters>) => onChange({ ...filters, ...patch });
+  const clear = () => onChange(DEFAULT_FILTERS);
+  const active =
+    filters.audience || filters.plotKey || filters.tone || filters.status || filters.search;
+
+  return (
+    <div className="card p-4 mb-6 space-y-3">
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Search */}
+        <input
+          value={filters.search}
+          onChange={(e) => set({ search: e.target.value })}
+          placeholder="🔍 Search stories…"
+          className="flex-1 min-w-[200px] px-3 py-2 text-sm"
+        />
+
+        {/* Audience */}
+        <Select
+          value={filters.audience ?? ""}
+          onChange={(v) => set({ audience: v ? (v as AudienceKey) : undefined })}
+          placeholder="All audiences"
+          options={AUDIENCES.map((a) => ({ value: a.key, label: `${a.emoji} ${a.label}` }))}
+        />
+
+        {/* Arc */}
+        <Select
+          value={filters.plotKey ?? ""}
+          onChange={(v) => set({ plotKey: v ? (v as PlotKey) : undefined })}
+          placeholder="All arcs"
+          options={PLOTS.map((p) => ({ value: p.key, label: p.title }))}
+        />
+
+        {/* Tone */}
+        <Select
+          value={filters.tone ?? ""}
+          onChange={(v) => set({ tone: v || undefined })}
+          placeholder="All tones"
+          options={TONES.map((t) => ({ value: t.key, label: t.label }))}
+        />
+
+        {/* Status */}
+        <Select
+          value={filters.status ?? ""}
+          onChange={(v) => set({ status: v ? (v as StoryStatus) : undefined })}
+          placeholder="All statuses"
+          options={[
+            { value: "draft", label: "Draft" },
+            { value: "published", label: "Published" },
+          ]}
+        />
+
+        {/* Sort */}
+        <Select
+          value={filters.sort}
+          onChange={(v) => set({ sort: v as Filters["sort"] })}
+          options={[
+            { value: "newest", label: "Newest first" },
+            { value: "oldest", label: "Oldest first" },
+            { value: "az", label: "A–Z" },
+          ]}
+        />
+
+        {active && (
+          <button onClick={clear} className="text-sm text-[--accent] hover:underline">
+            Clear all
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Select({
+  value,
+  onChange,
+  placeholder,
+  options,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="bg-[--panel-2] border border-[--border] text-sm px-3 py-2 rounded-lg cursor-pointer outline-none focus:border-[--accent]"
+    >
+      {placeholder && <option value="">{placeholder}</option>}
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function StoryCard({ s, onOpen }: { s: SavedStory; onOpen: () => void }) {
+  const a = AUDIENCES.find((x) => x.key === s.audience);
+  const p = PLOTS.find((x) => x.key === s.plotKey);
+  const published = s.status === "published";
+  return (
+    <button
+      onClick={onOpen}
+      className="card p-6 text-left hover:border-[--accent]/60 transition-colors group flex flex-col"
+    >
+      <div className="flex items-center gap-2 text-xs text-[--muted] mb-3">
+        <span>{a?.emoji}</span>
+        <span className="uppercase tracking-wider">{a?.label}</span>
+        <span
+          className={`ml-auto px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+            published ? "bg-emerald-500/15 text-emerald-400" : "bg-[--panel-2] text-[--muted]"
+          }`}
+        >
+          {published ? "Published" : "Draft"}
+        </span>
+      </div>
+      <h3 className="font-bold text-lg leading-snug mb-2 group-hover:text-[--accent] transition-colors">
+        {s.story.title}
+      </h3>
+      <p className="text-sm text-[--muted] line-clamp-2 mb-4">{s.story.hook}</p>
+      <div className="mt-auto flex items-center gap-2">
+        <span className="chip">{p?.emoji} {p?.title}</span>
+        {s.tone && s.tone !== "professional" && (
+          <span className="chip">{s.tone}</span>
+        )}
+        <span className="text-xs text-[--muted] ml-auto">
+          {new Date(s.createdAt).toLocaleDateString()}
+        </span>
+      </div>
+    </button>
+  );
+}
+
+/* ───────────── Table view ───────────── */
+
+function StoryTable({
+  stories,
+  onOpen,
+}: {
+  stories: SavedStory[];
+  onOpen: (id: string) => void;
+}) {
+  return (
+    <div className="card overflow-hidden">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-[--border] text-left text-xs uppercase tracking-wider text-[--muted]">
+            <th className="px-4 py-3">Story</th>
+            <th className="px-4 py-3">Audience</th>
+            <th className="px-4 py-3 hidden md:table-cell">Arc</th>
+            <th className="px-4 py-3 hidden lg:table-cell">Tone</th>
+            <th className="px-4 py-3">Status</th>
+            <th className="px-4 py-3 text-right">Created</th>
+          </tr>
+        </thead>
+        <tbody>
+          {stories.map((s) => {
+            const a = AUDIENCES.find((x) => x.key === s.audience);
+            const p = PLOTS.find((x) => x.key === s.plotKey);
+            return (
+              <tr
+                key={s.id}
+                onClick={() => onOpen(s.id)}
+                className="border-b border-[--border]/50 cursor-pointer hover:bg-white/5"
+              >
+                <td className="px-4 py-3 font-semibold">{s.story.title}</td>
+                <td className="px-4 py-3 text-[--muted]">
+                  {a?.emoji} {a?.label}
+                </td>
+                <td className="px-4 py-3 text-[--muted] hidden md:table-cell">
+                  {p?.title}
+                </td>
+                <td className="px-4 py-3 text-[--muted] hidden lg:table-cell capitalize">
+                  {s.tone ?? "professional"}
+                </td>
+                <td className="px-4 py-3">
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                      s.status === "published"
+                        ? "bg-emerald-500/15 text-emerald-400"
+                        : "bg-[--panel-2] text-[--muted]"
+                    }`}
+                  >
+                    {s.status === "published" ? "Published" : "Draft"}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-right text-[--muted] mono">
+                  {new Date(s.createdAt).toLocaleDateString()}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* ───────────── Empty state ───────────── */
+
 function EmptyState({
   hasFilter,
   onNew,
+  onClear,
 }: {
   hasFilter: boolean;
   onNew: () => void;
+  onClear: () => void;
 }) {
   return (
     <div className="card p-14 text-center">
       <div className="text-5xl mb-4">📖</div>
       <h2 className="text-xl font-bold mb-2">
-        {hasFilter ? "No stories in this audience yet" : "Welcome to your studio"}
+        {hasFilter ? "No stories match your filters" : "Welcome to your studio"}
       </h2>
       <p className="text-[--muted] mb-6 max-w-md mx-auto">
         {hasFilter
-          ? "Create your first story and it will appear here."
+          ? "Try adjusting or clearing your filters."
           : "Create your first story — for your brand, your company, or your family."}
       </p>
-      <button onClick={onNew} className="btn btn-primary">
-        ✨ Create your first story
-      </button>
+      <div className="flex gap-3 justify-center">
+        {hasFilter && (
+          <button onClick={onClear} className="btn btn-ghost">
+            Clear filters
+          </button>
+        )}
+        <button onClick={onNew} className="btn btn-primary">
+          ✨ Create your first story
+        </button>
+      </div>
     </div>
   );
 }
@@ -225,34 +533,47 @@ function EmptyState({
 function StoryViewer({
   story,
   onBack,
+  onStatus,
   onDelete,
 }: {
   story: SavedStory;
   onBack: () => void;
+  onStatus: (id: string, status: StoryStatus) => void;
   onDelete: (id: string) => void;
 }) {
   const a = AUDIENCES.find((x) => x.key === story.audience);
   const p = PLOTS.find((x) => x.key === story.plotKey);
   const s = story.story;
+  const published = story.status === "published";
   return (
     <div className="max-w-3xl mx-auto">
-      <button
-        onClick={onBack}
-        className="text-sm text-[--muted] hover:text-[--ink] mb-6"
-      >
+      <button onClick={onBack} className="text-sm text-[--muted] hover:text-[--ink] mb-6">
         ← Back to library
       </button>
 
-      <div className="flex items-center gap-2 text-xs text-[--muted] mb-3">
-        <span className="chip">{a?.emoji} {a?.label}</span>
-        <span className="chip">{p?.emoji} {p?.title}</span>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2 text-xs text-[--muted]">
+          <span className="chip">{a?.emoji} {a?.label}</span>
+          <span className="chip">{p?.emoji} {p?.title}</span>
+          {story.tone && story.tone !== "professional" && (
+            <span className="chip capitalize">{story.tone}</span>
+          )}
+        </div>
+        <button
+          onClick={() => onStatus(story.id, published ? "draft" : "published")}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${
+            published
+              ? "border-emerald-500/40 text-emerald-400 bg-emerald-500/10"
+              : "border-[--accent] text-[--accent] bg-amber-400/10"
+          }`}
+        >
+          {published ? "✓ Published — set to draft" : "Publish"}
+        </button>
       </div>
 
       <article className="card p-8 md:p-12 space-y-5">
         <p className="text-[--muted] text-sm italic">{s.hook}</p>
-        <h1 className="text-3xl md:text-4xl font-black amber-grad">
-          {s.title}
-        </h1>
+        <h1 className="text-3xl md:text-4xl font-black amber-grad">{s.title}</h1>
         {s.sections.map((sec, i) => (
           <section key={i}>
             <h2 className="text-sm font-bold uppercase tracking-wider text-[--accent] mb-1">
@@ -266,19 +587,15 @@ function StoryViewer({
             “{s.pullQuote}”
           </blockquote>
         )}
-        <div className="pt-5 border-t border-[--border] flex items-center justify-between">
+        <div className="pt-5 border-t border-[--border]">
           <p className="text-sm text-[--muted]">
-            <span className="font-semibold text-[--ink]">Next step:</span>{" "}
-            {s.cta}
+            <span className="font-semibold text-[--ink]">Next step:</span> {s.cta}
           </p>
         </div>
       </article>
 
       <div className="mt-4 flex justify-end">
-        <button
-          onClick={() => onDelete(story.id)}
-          className="text-sm text-red-400/80 hover:text-red-400"
-        >
+        <button onClick={() => onDelete(story.id)} className="text-sm text-red-400/80 hover:text-red-400">
           Delete story
         </button>
       </div>
@@ -291,13 +608,13 @@ function StoryViewer({
 function CreateStory({ onSaved }: { onSaved: (s: SavedStory) => void }) {
   const [audience, setAudience] = useState<AudienceKey>("brand");
   const [plotKey, setPlotKey] = useState<PlotKey>(PLOTS[0].key);
+  const [tone, setTone] = useState<(typeof TONES)[number]["key"]>("professional");
   const [company, setCompany] = useState("");
   const [facts, setFacts] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const aud = AUDIENCES.find((a) => a.key === audience)!;
-  const plot = PLOTS.find((p) => p.key === plotKey)!;
 
   async function generate(e: React.FormEvent) {
     e.preventDefault();
@@ -307,7 +624,7 @@ function CreateStory({ onSaved }: { onSaved: (s: SavedStory) => void }) {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plotKey, company, facts, audience, tone: "professional" }),
+        body: JSON.stringify({ plotKey, company, facts, audience, tone }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -327,6 +644,8 @@ function CreateStory({ onSaved }: { onSaved: (s: SavedStory) => void }) {
         plotKey,
         title: story.title,
         facts,
+        tone,
+        status: "draft",
         story,
       });
     } catch (err) {
@@ -338,9 +657,7 @@ function CreateStory({ onSaved }: { onSaved: (s: SavedStory) => void }) {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="text-3xl font-black tracking-tight mb-2">
-        Create a new story
-      </h1>
+      <h1 className="text-3xl font-black tracking-tight mb-2">Create a new story</h1>
       <p className="text-[--muted] mb-8">
         Choose who you're telling it for, pick an arc, and paste your material.
       </p>
@@ -352,9 +669,7 @@ function CreateStory({ onSaved }: { onSaved: (s: SavedStory) => void }) {
             key={a.key}
             onClick={() => setAudience(a.key)}
             className={`card p-5 text-left transition-all ${
-              a.key === audience
-                ? "border-[--accent]/60 ring-1 ring-[--accent]/40"
-                : "hover:border-[--border]"
+              a.key === audience ? "border-[--accent]/60 ring-1 ring-[--accent]/40" : "hover:border-[--border]"
             }`}
           >
             <div className="text-2xl mb-2">{a.emoji}</div>
@@ -367,8 +682,7 @@ function CreateStory({ onSaved }: { onSaved: (s: SavedStory) => void }) {
       {/* Audience guidance */}
       <div className="card p-5 mb-8 bg-[--panel-2]">
         <p className="text-sm text-[--muted]">
-          <span className="text-[--accent] font-semibold">What to tell:</span>{" "}
-          {aud.whatToTell}
+          <span className="text-[--accent] font-semibold">What to tell:</span> {aud.whatToTell}
         </p>
       </div>
 
@@ -384,9 +698,7 @@ function CreateStory({ onSaved }: { onSaved: (s: SavedStory) => void }) {
                 key={p.key}
                 onClick={() => setPlotKey(p.key)}
                 className={`px-2 py-2 rounded-lg border text-left text-xs transition-all ${
-                  p.key === plotKey
-                    ? "border-amber-400/60 bg-amber-400/10"
-                    : "border-[--border] hover:bg-white/5"
+                  p.key === plotKey ? "border-amber-400/60 bg-amber-400/10" : "border-[--border] hover:bg-white/5"
                 }`}
               >
                 <div className="font-semibold leading-tight">{p.title}</div>
@@ -397,15 +709,33 @@ function CreateStory({ onSaved }: { onSaved: (s: SavedStory) => void }) {
 
         <div>
           <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">
-            2 · Title / subject
+            2 · Tone
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {TONES.map((t) => (
+              <button
+                type="button"
+                key={t.key}
+                onClick={() => setTone(t.key)}
+                className={`px-3 py-1.5 rounded-lg border text-sm capitalize ${
+                  t.key === tone ? "border-amber-400/60 bg-amber-400/10" : "border-[--border] hover:bg-white/5"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">
+            3 · Title / subject
           </label>
           <input
             value={company}
             onChange={(e) => setCompany(e.target.value)}
             placeholder={
-              audience === "family"
-                ? "e.g. Grandmother Rosa's journey"
-                : "e.g. Northwind Analytics"
+              audience === "family" ? "e.g. Grandmother Rosa's journey" : "e.g. Northwind Analytics"
             }
             className="w-full px-4 py-3"
           />
@@ -413,7 +743,7 @@ function CreateStory({ onSaved }: { onSaved: (s: SavedStory) => void }) {
 
         <div>
           <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">
-            3 · Raw material
+            4 · Raw material
           </label>
           <textarea
             required
@@ -425,18 +755,12 @@ function CreateStory({ onSaved }: { onSaved: (s: SavedStory) => void }) {
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="btn btn-primary w-full justify-center disabled:opacity-60"
-        >
+        <button type="submit" disabled={loading} className="btn btn-primary w-full justify-center disabled:opacity-60">
           {loading ? "Writing your story…" : "✨ Generate story"}
         </button>
 
         {error && (
-          <p className="text-sm text-red-400 bg-red-400/5 border border-red-400/20 rounded-lg px-4 py-3">
-            {error}
-          </p>
+          <p className="text-sm text-red-400 bg-red-400/5 border border-red-400/20 rounded-lg px-4 py-3">{error}</p>
         )}
       </form>
     </div>
