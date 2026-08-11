@@ -1,4 +1,5 @@
 import CinematicOpener from "@/components/CinematicOpener";
+import FaceGallery from "@/components/FaceGallery";
 import PlotExplorer from "@/components/PlotExplorer";
 import StoryGenerator from "@/components/StoryGenerator";
 import WaitlistForm from "@/components/WaitlistForm";
@@ -8,6 +9,9 @@ export default function Home() {
     <main className="flex-1">
       {/* Cinematic 3D fly-through */}
       <CinematicOpener />
+
+      {/* Stories turning real — 3D face gallery */}
+      <FaceGallery />
 
       {/* The seven plots — the heart of the product */}
       <section id="plots" className="py-24 px-6 bg-[--bg] border-t border-[--border]">
@@ -92,6 +96,12 @@ export default function Home() {
             workspace.
           </p>
           <WaitlistForm />
+
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <a href="/dashboard" className="btn btn-ghost">
+              🧭 Open the studio dashboard
+            </a>
+          </div>
         </div>
       </section>
     </main>

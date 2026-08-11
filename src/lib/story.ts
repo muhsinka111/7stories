@@ -3,6 +3,7 @@
 // on that arc's beats. Provider-agnostic (OpenAI-compatible chat endpoint).
 
 import { getPlot, Plot } from "./plots";
+import { getAudience } from "./audiences";
 
 export interface GenerateInput {
   plotKey: string;
@@ -10,10 +11,10 @@ export interface GenerateInput {
   facts: string;
   /** Company / brand the story is about. */
   company: string;
+  /** Storytelling audience: brand, company, or family. */
+  audience?: "brand" | "company" | "family";
   /** Tone preference. */
   tone?: "professional" | "warm" | "bold" | "empathetic";
-  /** Audience. */
-  audience?: string;
 }
 
 export interface GeneratedStory {
@@ -42,9 +43,14 @@ function toneLine(tone: GenerateInput["tone"]): string {
 }
 
 function buildSystemPrompt(plot: Plot, input: GenerateInput): string {
+  const audience = getAudience(input.audience ?? "brand");
   return [
-    "You are 7stories, a professional brand-storytelling assistant.",
-    `You write a customer story for "${input.company}" using the "${plot.title}" narrative archetype.`,
+    "You are 7stories, a professional storytelling assistant.",
+    `You write a story for the "${audience.label}" audience about "${input.company}" using the "${plot.title}" narrative archetype.`,
+    "",
+    `AUDIENCE — ${audience.label} storytelling:`,
+    `- What to tell: ${audience.whatToTell}`,
+    ...audience.guidance.map((g) => `- ${g}`),
     "",
     "RULES — FACTUAL DISCIPLINE:",
     "- Follow the beats of the chosen archetype EXACTLY, in order.",
@@ -60,9 +66,8 @@ function buildSystemPrompt(plot: Plot, input: GenerateInput): string {
     "- State outcomes as facts ('Support time fell 40%'), never as hype ('revolutionary' / 'game-changing').",
     "- Ban em-dashes, 'It's not X, it's Y' reversals, and therapeutic/validating language.",
     "- No meta commentary, no 'this story explores', no three-part symmetry padding.",
-    "- The customer is the hero; the product is the instrument, not the protagonist.",
+    "- The subject is the hero; the product or context is the instrument, not the protagonist.",
     `- Tone: ${toneLine(input.tone)}`,
-    input.audience ? `- Audience: ${input.audience}.` : "",
     "- Keep the whole story under ~450 words.",
   ].join("\n");
 }
