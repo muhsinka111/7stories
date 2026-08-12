@@ -6,6 +6,7 @@ import { AUDIENCES } from "@/lib/audiences";
 import type { AudienceKey } from "@/lib/audiences";
 import type { PlotKey } from "@/lib/plots";
 import type { GeneratedStory } from "@/lib/story";
+import type { AssetMode, MediaAsset } from "@/lib/media";
 import {
   loadLibrary,
   saveStory,
@@ -22,6 +23,63 @@ const TONES = [
   { key: "bold", label: "Bold" },
   { key: "empathetic", label: "Empathetic" },
 ] as const;
+
+const ASSET_MODES: { key: AssetMode; label: string; icon: string; desc: string }[] = [
+  { key: "text", label: "Text", icon: "✍️", desc: "Story only" },
+  { key: "image", label: "Image", icon: "🖼️", desc: "+ cover image" },
+  { key: "video", label: "Video", icon: "🎬", desc: "+ story video" },
+  { key: "both", label: "Both", icon: "🎥", desc: "image + video" },
+];
+
+function AssetModeSelector({
+  value,
+  onChange,
+}: {
+  value: AssetMode;
+  onChange: (m: AssetMode) => void;
+}) {
+  return (
+    <div>
+      <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">
+        Output type
+      </label>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {ASSET_MODES.map((m) => (
+          <button
+            type="button"
+            key={m.key}
+            onClick={() => onChange(m.key)}
+            className={`px-3 py-3 rounded-lg border text-center transition-all ${
+              m.key === value ? "border-amber-400/60 bg-amber-400/10" : "border-[--border] hover:bg-white/5"
+            }`}
+          >
+            <div className="text-xl mb-1">{m.icon}</div>
+            <div className="font-semibold text-sm">{m.label}</div>
+            <div className="text-[11px] text-[--muted]">{m.desc}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MediaBlock({ assets, alt }: { assets: MediaAsset[]; alt: string }) {
+  return (
+    <div className="space-y-3">
+      {assets.map((a, i) =>
+        a.kind === "image" ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img key={i} src={a.url} alt={alt} className="w-full rounded-xl object-cover border border-[--border]" />
+        ) : (
+          <video key={i} src={a.url} controls className="w-full rounded-xl border border-[--border]" />
+        )
+      )}
+      <p className="text-[11px] text-[--muted]">
+        Generated with {assets.map((a) => a.provider).join(" · ")}
+      </p>
+    </div>
+  );
+}
 
 type View =
   | { name: "library" }
@@ -399,6 +457,23 @@ function StoryCard({ s, onOpen }: { s: SavedStory; onOpen: () => void }) {
       onClick={onOpen}
       className="card p-6 text-left hover:border-[--accent]/60 transition-colors group flex flex-col"
     >
+      {s.story.assets && s.story.assets.length > 0 && (
+        <div className="relative mb-3">
+          {s.story.assets.some((a) => a.kind === "image") && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={s.story.assets.find((a) => a.kind === "image")!.url}
+              alt={s.story.title}
+              className="w-full h-36 object-cover rounded-lg border border-[--border]"
+            />
+          )}
+          {s.story.assets.some((a) => a.kind === "video") && (
+            <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-black/60 text-white">
+              🎬 Video
+            </span>
+          )}
+        </div>
+      )}
       <div className="flex items-center gap-2 text-xs text-[--muted] mb-3">
         <span>{a?.emoji}</span>
         <span className="uppercase tracking-wider">{a?.label}</span>
@@ -442,6 +517,7 @@ function StoryTable({
         <thead>
           <tr className="border-b border-[--border] text-left text-xs uppercase tracking-wider text-[--muted]">
             <th className="px-4 py-3">Story</th>
+            <th className="px-4 py-3 hidden sm:table-cell">Media</th>
             <th className="px-4 py-3">Audience</th>
             <th className="px-4 py-3 hidden md:table-cell">Arc</th>
             <th className="px-4 py-3 hidden lg:table-cell">Tone</th>
@@ -460,6 +536,16 @@ function StoryTable({
                 className="border-b border-[--border]/50 cursor-pointer hover:bg-white/5"
               >
                 <td className="px-4 py-3 font-semibold">{s.story.title}</td>
+                <td className="px-4 py-3 text-[--muted] hidden sm:table-cell">
+                  {s.story.assets?.length ? (
+                    <span className="text-xs">
+                      {s.story.assets.some((a) => a.kind === "image") ? "🖼️ " : ""}
+                      {s.story.assets.some((a) => a.kind === "video") ? "🎬" : ""}
+                    </span>
+                  ) : (
+                    <span className="text-[--muted]/50">—</span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-[--muted]">
                   {a?.emoji} {a?.label}
                 </td>
@@ -572,6 +658,7 @@ function StoryViewer({
       </div>
 
       <article className="card p-8 md:p-12 space-y-5">
+        {s.assets && s.assets.length > 0 && <MediaBlock assets={s.assets} alt={s.title} />}
         <p className="text-[--muted] text-sm italic">{s.hook}</p>
         <h1 className="text-3xl md:text-4xl font-black amber-grad">{s.title}</h1>
         {s.sections.map((sec, i) => (
@@ -609,6 +696,7 @@ function CreateStory({ onSaved }: { onSaved: (s: SavedStory) => void }) {
   const [audience, setAudience] = useState<AudienceKey>("brand");
   const [plotKey, setPlotKey] = useState<PlotKey>(PLOTS[0].key);
   const [tone, setTone] = useState<(typeof TONES)[number]["key"]>("professional");
+  const [assetMode, setAssetMode] = useState<AssetMode>("text");
   const [company, setCompany] = useState("");
   const [facts, setFacts] = useState("");
   const [loading, setLoading] = useState(false);
@@ -624,14 +712,16 @@ function CreateStory({ onSaved }: { onSaved: (s: SavedStory) => void }) {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plotKey, company, facts, audience, tone }),
+        body: JSON.stringify({ plotKey, company, facts, audience, tone, assetMode }),
       });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(
           data.error === "config_missing"
             ? "Story engine isn't configured yet (OPENAI_API_KEY missing)."
-            : data.message || "Generation failed."
+            : data.error === "media_config_missing"
+              ? data.message || "Image/video needs FAL_KEY in .env.local."
+              : data.message || "Generation failed."
         );
       }
       const story: GeneratedStory = data.story;
@@ -645,6 +735,7 @@ function CreateStory({ onSaved }: { onSaved: (s: SavedStory) => void }) {
         title: story.title,
         facts,
         tone,
+        assetMode,
         status: "draft",
         story,
       });
@@ -754,6 +845,8 @@ function CreateStory({ onSaved }: { onSaved: (s: SavedStory) => void }) {
             className="w-full px-4 py-3 resize-none"
           />
         </div>
+
+        <AssetModeSelector value={assetMode} onChange={setAssetMode} />
 
         <button type="submit" disabled={loading} className="btn btn-primary w-full justify-center disabled:opacity-60">
           {loading ? "Writing your story…" : "✨ Generate story"}

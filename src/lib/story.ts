@@ -4,6 +4,12 @@
 
 import { getPlot, Plot } from "./plots";
 import { getAudience } from "./audiences";
+import {
+  AssetMode,
+  MediaAsset,
+  generateStoryAssets,
+  mediaProviders,
+} from "./media";
 
 export interface GenerateInput {
   plotKey: string;
@@ -15,6 +21,8 @@ export interface GenerateInput {
   audience?: "brand" | "company" | "family";
   /** Tone preference. */
   tone?: "professional" | "warm" | "bold" | "empathetic";
+  /** Asset mode: text, image, video, or both. Defaults to text. */
+  assetMode?: AssetMode;
 }
 
 export interface GeneratedStory {
@@ -27,6 +35,10 @@ export interface GeneratedStory {
   pullQuote?: string;
   /** Suggested CTA. */
   cta: string;
+  /** Generated media assets (image / video), when assetMode asks for them. */
+  assets?: MediaAsset[];
+  /** Which media providers were configured for this run. */
+  _providers?: { image?: string; video?: string };
 }
 
 function toneLine(tone: GenerateInput["tone"]): string {
@@ -169,5 +181,18 @@ export async function generateStory(
   const content: string = data?.choices?.[0]?.message?.content ?? "";
   if (!content) throw new Error("Empty response from model");
 
-  return normalize(extractJSON(content));
+  const story = normalize(extractJSON(content));
+
+  // Generate media assets when the user asked for image / video / both.
+  const mode: AssetMode = input.assetMode ?? "text";
+  if (mode !== "text") {
+    const { assets } = await generateStoryAssets(mode, {
+      audience: input.audience ?? "brand",
+      title: story.title,
+      hook: story.hook,
+    });
+    story.assets = assets;
+  }
+  story._providers = mediaProviders();
+  return story;
 }

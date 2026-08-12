@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateStory } from "@/lib/story";
+import { MediaConfigError } from "@/lib/media";
 
 /**
  * POST /api/generate
@@ -13,7 +14,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
 
-  const { plotKey, facts, company, tone, audience } = body ?? {};
+  const { plotKey, facts, company, tone, audience, assetMode } = body ?? {};
 
   if (typeof plotKey !== "string" || typeof facts !== "string") {
     return NextResponse.json(
@@ -32,14 +33,21 @@ export async function POST(request: Request) {
       company: typeof company === "string" ? company : "",
       tone,
       audience,
+      assetMode: ["text", "image", "video", "both"].includes(assetMode)
+        ? assetMode
+        : "text",
     });
     return NextResponse.json({ ok: true, story });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown error";
     const isConfig = msg.includes("OPENAI_API_KEY");
+    const isMediaConfig = err instanceof MediaConfigError;
     return NextResponse.json(
-      { error: isConfig ? "config_missing" : "generation_failed", message: msg },
-      { status: isConfig ? 503 : 502 }
+      {
+        error: isConfig ? "config_missing" : isMediaConfig ? "media_config_missing" : "generation_failed",
+        message: msg,
+      },
+      { status: isConfig ? 503 : isMediaConfig ? 503 : 502 }
     );
   }
 }

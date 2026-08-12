@@ -6,6 +6,7 @@
 import { AudienceKey } from "./audiences";
 import { PlotKey } from "./plots";
 import { GeneratedStory } from "./story";
+import { AssetMode } from "./media";
 
 export type StoryStatus = "draft" | "published";
 
@@ -18,6 +19,7 @@ export interface SavedStory {
   title: string;
   facts: string;
   tone?: "professional" | "warm" | "bold" | "empathetic";
+  assetMode?: AssetMode;
   status?: StoryStatus;
   story: GeneratedStory;
 }
