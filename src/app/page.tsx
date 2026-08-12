@@ -1,7 +1,15 @@
 import StoryGenerator from "@/components/StoryGenerator";
 import WaitlistForm from "@/components/WaitlistForm";
 import Gallery from "@/components/Gallery";
+import Hero3D from "@/components/Hero3D";
 import { CATEGORIES } from "@/lib/categories";
+import gallery from "../../public/data/gallery.json";
+
+const RING_CARDS = (gallery as any[]).slice(0, 12).map((g) => ({
+  label: g.label,
+  emoji: ({ wedding: "🥂", newborn: "👶", baby: "🧸", family: "👨‍👩‍👧", travel: "✈️", brand: "🚀", elders: "👴", anniversary: "💍", product: "📦", memorial: "🕯️", pet: "🐾" } as any)[g.cat] || "✨",
+  img: g.image,
+}));
 
 export default function Home() {
   return (
@@ -40,6 +48,9 @@ export default function Home() {
             ))}
           </div>
         </div>
+
+        {/* 3D rotating ring of cinematic creations */}
+        <Hero3D cards={RING_CARDS} />
       </section>
 
       {/* Categories */}

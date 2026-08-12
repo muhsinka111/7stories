@@ -34,5 +34,41 @@
     "label": "Baby",
     "prompt": "A playful cinematic moment of a toddler taking first steps, joy and motion, soft light, heartwarming, movie still, no text",
     "image": "https://v3b.fal.media/files/b/0aa60fd7/zCbtzYyGh54uegnFKRdue.jpg"
+  },
+  {
+    "cat": "baby",
+    "label": "Baby Dancing",
+    "prompt": "A joyful cinematic moment of a baby dancing in a sunlit living room, pure happiness, motion and light, soft warm tones, movie still, no text",
+    "image": "https://v3b.fal.media/files/b/0aa6126b/oULoIl3dSiByTsjFS6PsG.jpg"
+  },
+  {
+    "cat": "elders",
+    "label": "Grandparents",
+    "prompt": "An emotional cinematic portrait of an elderly couple holding hands, golden window light, film grain, deeply moving, no text",
+    "image": "https://v3b.fal.media/files/b/0aa6126c/zAGoMAIE5cMARsTYeX5LD.jpg"
+  },
+  {
+    "cat": "anniversary",
+    "label": "Anniversary",
+    "prompt": "A romantic cinematic anniversary scene: candles, soft bokeh, a couple toasting at a beautiful dinner table, warm, elegant, no text",
+    "image": "https://v3b.fal.media/files/b/0aa6126c/terRGv1E3DXy48warFQDu.jpg"
+  },
+  {
+    "cat": "product",
+    "label": "Product",
+    "prompt": "A premium cinematic product hero shot: a sleek modern product on a dramatic lit pedestal, studio lighting, luxury feel, no text",
+    "image": "https://v3b.fal.media/files/b/0aa6126c/6L08C8qsHW1t7u5A6DW9V.jpg"
+  },
+  {
+    "cat": "memorial",
+    "label": "Memorial",
+    "prompt": "A peaceful, dignified cinematic tribute: soft morning light through trees, a quiet garden bench, gentle and hopeful, no text",
+    "image": "https://v3b.fal.media/files/b/0aa6126c/HX6lUJL1_usCY-tdbZW9m.jpg"
+  },
+  {
+    "cat": "pet",
+    "label": "Pet",
+    "prompt": "A warm cinematic portrait of a beloved dog looking at the camera, golden light, emotional bond, high detail, no text",
+    "image": "https://v3b.fal.media/files/b/0aa6126d/lIeyla_4-gg9y82PB3yzo.jpg"
   }
 ]

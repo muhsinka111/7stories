@@ -183,15 +183,32 @@ export async function generateImage(prompt: string): Promise<MediaAsset> {
 
 // ─────────────────────────── Video generation ───────────────────────────
 
-async function videoViaFAL(prompt: string): Promise<string> {
+/** Selectable video models available on FAL. Users can pick any of these. */
+export interface VideoModelOption {
+  key: string;
+  label: string;
+  vendor: string;
+  hint: string;
+}
+export const VIDEO_MODELS: VideoModelOption[] = [
+  { key: "fal-ai/veo3", label: "Veo 3", vendor: "Google", hint: "Premium cinematic motion" },
+  { key: "fal-ai/kling-video/v1.6", label: "Kling 1.6", vendor: "Kuaishou", hint: "Strong motion & realism" },
+  { key: "fal-ai/minimax-video", label: "MiniMax H3", vendor: "MiniMax", hint: "One model for all modalities" },
+  { key: "fal-ai/wan/v2.2", label: "Wan 2.2", vendor: "Alibaba", hint: "Open, expressive, artistic" },
+  { key: "fal-ai/ltx-video", label: "LTX Video", vendor: "Lightricks", hint: "Fast, lightweight" },
+];
+export function getVideoModel(key: string): VideoModelOption {
+  return VIDEO_MODELS.find((v) => v.key === key) ?? VIDEO_MODELS[0];
+}
+
+async function videoViaFAL(prompt: string, model?: string): Promise<string> {
   const key = process.env.FAL_KEY!;
-  // Cinematic video model (configurable via FAL_VIDEO_MODEL). Veo 3 for
-  // premium cinematic motion; Kling 1.6 / Wan 2.2 are strong alternatives.
-  const model = process.env.FAL_VIDEO_MODEL || "fal-ai/veo3";
-  const res = await fetch(`https://queue.fal.run/${model}`, {
+  // Use the requested model, else env override, else default Veo 3.
+  const chosen = model ?? process.env.FAL_VIDEO_MODEL ?? "fal-ai/veo3";
+  const res = await fetch(`https://queue.fal.run/${chosen}`, {
     method: "POST",
     headers: { Authorization: `Key ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, duration: "short" }),
+    body: JSON.stringify({ prompt }),
   });
   if (!res.ok) {
     const t = await res.text();
@@ -222,7 +239,7 @@ async function pollReplicateOutput(predictionUrl: string, key: string): Promise<
   throw new Error("Timed out waiting for Replicate");
 }
 
-export async function generateVideo(prompt: string): Promise<MediaAsset> {
+export async function generateVideo(prompt: string, model?: string): Promise<MediaAsset> {
   const providers = mediaProviders();
   const provider = providers.video;
   if (!provider) {
@@ -231,11 +248,11 @@ export async function generateVideo(prompt: string): Promise<MediaAsset> {
     );
   }
   const url =
-    provider === "fal" ? await videoViaFAL(prompt) : await (async () => {
+    provider === "fal" ? await videoViaFAL(prompt, model) : await (async () => {
       const key = process.env.REPLICATE_API_TOKEN!;
       const res = await fetch("https://api.replicate.com/v1/models/wan-video/wan-2.1-t2v/predictions", {
         method: "POST",
-        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        headers: { Authorization: `Key ${key}`, "Content-Type": "application/json" },
         body: JSON.stringify({ input: { prompt } }),
       });
       if (!res.ok) throw new Error("Replicate video failed");
@@ -252,7 +269,7 @@ export async function generateVideo(prompt: string): Promise<MediaAsset> {
  */
 export async function generateStoryAssets(
   mode: AssetMode,
-  opts: { category: string; style: string; title: string; hook: string }
+  opts: { category: string; style: string; title: string; hook: string; videoModel?: string }
 ): Promise<MediaResult> {
   if (mode === "text") return { assets: [], providers: mediaProviders() };
   const providers = mediaProviders();
@@ -263,7 +280,7 @@ export async function generateStoryAssets(
     assets.push(await generateImage(prompt));
   }
   if (mode === "video" || mode === "both") {
-    assets.push(await generateVideo(prompt));
+    assets.push(await generateVideo(prompt, opts.videoModel));
   }
   return { assets, providers };
 }

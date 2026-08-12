@@ -45,7 +45,7 @@ function AssetModeSelector({
             key={m.key}
             onClick={() => onChange(m.key)}
             className={`px-3 py-3 rounded-lg border text-center transition-all ${
-              m.key === value ? "border-amber-400/60 bg-amber-400/10" : "border-[--border] hover:bg-white/5"
+              m.key === value ? "border-[--accent]/60 bg-[--accent]/10" : "border-[--border] hover:bg-white/5"
             }`}
           >
             <div className="text-xl mb-1">{m.icon}</div>
@@ -163,81 +163,111 @@ export default function Dashboard() {
   return (
     <div className="flex min-h-screen bg-[--bg]">
       {/* Sidebar */}
-      <aside className="w-60 shrink-0 border-r border-[--border] flex flex-col sticky top-0 h-screen p-4">
+      <aside className="w-64 shrink-0 border-r border-[--border] bg-[--panel]/40 backdrop-blur-xl flex flex-col sticky top-0 h-screen p-5">
         <button
           onClick={() => setView({ name: "library" })}
-          className="text-xl font-black tracking-tight mb-6 text-left"
+          className="flex items-center gap-2.5 mb-6 text-left"
         >
-          7stories<span className="amber-grad">.</span>
+          <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-[--accent] to-[--accent-2] grid place-items-center font-black text-white text-lg">
+            7
+          </span>
+          <span className="text-lg font-bold tracking-tight">7stories</span>
         </button>
 
-        <nav className="space-y-1 flex-1">
-          <button
-            onClick={() => {
-              setFilters(DEFAULT_FILTERS);
-              setView({ name: "library" });
-            }}
-            className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
-              view.name === "library" && !filters.audience
-                ? "bg-white/10 text-[--ink]"
-                : "text-[--muted] hover:bg-white/5"
-            }`}
-          >
-            🗂️ All stories
-          </button>
+        <button
+          onClick={() => setView({ name: "new" })}
+          className="btn btn-primary w-full justify-center mb-7"
+        >
+          ✨ New story
+        </button>
 
-          <p className="text-xs uppercase tracking-widest text-[--muted] px-3 pt-4 pb-1">
-            Audiences
-          </p>
-          {AUDIENCES.map((a) => (
+        <nav className="flex-1 space-y-6 overflow-y-auto">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-[--muted] px-3 mb-2">Library</p>
             <button
-              key={a.key}
-              onClick={() => {
-                setFilters((f) => ({ ...f, audience: a.key }));
-                setView({ name: "library" });
-              }}
+              onClick={() => { setFilters((f) => ({ ...f, status: undefined })); setView({ name: "library" }); }}
               className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 ${
-                filters.audience === a.key
-                  ? "bg-white/10 text-[--ink]"
-                  : "text-[--muted] hover:bg-white/5"
+                view.name === "library" && !filters.status
+                  ? "bg-white/10 text-[--ink]" : "text-[--muted] hover:bg-white/5"
               }`}
             >
-              <span>{a.emoji}</span> {a.label}
-              <span className="ml-auto text-xs text-[--muted]/60">
-                {stats.byAudience[a.key] ?? 0}
-              </span>
+              <span className="opacity-80">▦</span> All stories
             </button>
-          ))}
-        </nav>
+            <button
+              onClick={() => { setFilters((f) => ({ ...f, status: "published" })); setView({ name: "library" }); }}
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 ${
+                filters.status === "published" ? "bg-white/10 text-[--ink]" : "text-[--muted] hover:bg-white/5"
+              }`}
+            >
+              <span className="opacity-80">✓</span> Published
+            </button>
+            <button
+              onClick={() => { setFilters((f) => ({ ...f, status: "draft" })); setView({ name: "library" }); }}
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 ${
+                filters.status === "draft" ? "bg-white/10 text-[--ink]" : "text-[--muted] hover:bg-white/5"
+              }`}
+            >
+              <span className="opacity-80">✎</span> Drafts
+            </button>
+          </div>
 
-        <div className="space-y-2">
-          <button
-            onClick={() => setView({ name: "account" })}
-            className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 ${
-              view.name === "account" ? "bg-white/10 text-[--ink]" : "text-[--muted] hover:bg-white/5"
-            }`}
-          >
-            🔐 Account & Files
-          </button>
-          <button
-            onClick={() => setView({ name: "settings" })}
-            className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 ${
-              view.name === "settings" ? "bg-white/10 text-[--ink]" : "text-[--muted] hover:bg-white/5"
-            }`}
-          >
-            ⚙️ Settings
-          </button>
-          <button
-            onClick={() => setView({ name: "new" })}
-            className="btn btn-primary w-full justify-center"
-          >
-            ✨ New story
-          </button>
-        </div>
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-[--muted] px-3 mb-2">Audiences</p>
+            {AUDIENCES.map((a) => (
+              <button
+                key={a.key}
+                onClick={() => { setFilters((f) => ({ ...f, audience: a.key })); setView({ name: "library" }); }}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 ${
+                  filters.audience === a.key ? "bg-white/10 text-[--ink]" : "text-[--muted] hover:bg-white/5"
+                }`}
+              >
+                <span>{a.emoji}</span> {a.label}
+                <span className="ml-auto text-xs text-[--muted]/60">{stats.byAudience[a.key] ?? 0}</span>
+              </button>
+            ))}
+          </div>
+
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-[--muted] px-3 mb-2">Account</p>
+            <button
+              onClick={() => setView({ name: "account" })}
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 ${
+                view.name === "account" ? "bg-white/10 text-[--ink]" : "text-[--muted] hover:bg-white/5"
+              }`}
+            >
+              🔐 Account & Files
+            </button>
+            <button
+              onClick={() => setView({ name: "settings" })}
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 ${
+                view.name === "settings" ? "bg-white/10 text-[--ink]" : "text-[--muted] hover:bg-white/5"
+              }`}
+            >
+              ⚙️ Settings
+            </button>
+          </div>
+        </nav>
       </aside>
 
       {/* Content */}
-      <main className="flex-1 p-6 md:p-10">
+      <main className="flex-1 flex flex-col min-w-0">
+        <header className="sticky top-0 z-10 flex items-center gap-4 px-6 md:px-10 py-4 border-b border-[--border] bg-[--bg]/70 backdrop-blur-xl">
+          <div className="text-sm text-[--muted]">
+            {view.name === "library" ? "Your library" : view.name === "new" ? "Create" : view.name === "account" ? "Account & Files" : view.name === "settings" ? "Settings" : "Story"}
+          </div>
+          <div className="ml-auto flex items-center gap-3">
+            <span className="chip">⚡ Unlimited</span>
+            <button
+              onClick={() => setView({ name: "account" })}
+              className="w-9 h-9 rounded-full bg-gradient-to-br from-[--accent] to-[--accent-2] grid place-items-center text-xs font-bold text-white"
+              title="Account"
+            >
+              👤
+            </button>
+          </div>
+        </header>
+
+        <div className="flex-1 p-6 md:p-10">
         {view.name === "new" && (
           <CreateStory
             onSaved={async (s) => {
@@ -275,6 +305,7 @@ export default function Dashboard() {
             onNew={() => setView({ name: "new" })}
           />
         )}
+        </div>
       </main>
     </div>
   );
@@ -329,7 +360,7 @@ function Library({
           <button
             onClick={() => onMode("grid")}
             className={`px-3 py-1.5 rounded-lg text-sm border ${
-              mode === "grid" ? "border-[--accent] bg-amber-400/10" : "border-[--border]"
+              mode === "grid" ? "border-[--accent] bg-[--accent]/10" : "border-[--border]"
             }`}
           >
             Grid
@@ -337,7 +368,7 @@ function Library({
           <button
             onClick={() => onMode("table")}
             className={`px-3 py-1.5 rounded-lg text-sm border ${
-              mode === "table" ? "border-[--accent] bg-amber-400/10" : "border-[--border]"
+              mode === "table" ? "border-[--accent] bg-[--accent]/10" : "border-[--border]"
             }`}
           >
             Table
@@ -674,7 +705,7 @@ function StoryViewer({
           className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${
             published
               ? "border-emerald-500/40 text-emerald-400 bg-emerald-500/10"
-              : "border-[--accent] text-[--accent] bg-amber-400/10"
+              : "border-[--accent] text-[--accent] bg-[--accent]/10"
           }`}
         >
           {published ? "✓ Published — set to draft" : "Publish"}
@@ -813,7 +844,7 @@ function CreateStory({ onSaved }: { onSaved: (s: SavedStory) => void }) {
                 key={p.key}
                 onClick={() => setPlotKey(p.key)}
                 className={`px-2 py-2 rounded-lg border text-left text-xs transition-all ${
-                  p.key === plotKey ? "border-amber-400/60 bg-amber-400/10" : "border-[--border] hover:bg-white/5"
+                  p.key === plotKey ? "border-[--accent]/60 bg-[--accent]/10" : "border-[--border] hover:bg-white/5"
                 }`}
               >
                 <div className="font-semibold leading-tight">{p.title}</div>
@@ -833,7 +864,7 @@ function CreateStory({ onSaved }: { onSaved: (s: SavedStory) => void }) {
                 key={t.key}
                 onClick={() => setTone(t.key)}
                 className={`px-3 py-1.5 rounded-lg border text-sm capitalize ${
-                  t.key === tone ? "border-amber-400/60 bg-amber-400/10" : "border-[--border] hover:bg-white/5"
+                  t.key === tone ? "border-[--accent]/60 bg-[--accent]/10" : "border-[--border] hover:bg-white/5"
                 }`}
               >
                 {t.label}

@@ -27,6 +27,8 @@ export interface GenerateInput {
   style?: string;
   /** Output format. Defaults to story. */
   format?: "story" | "book" | "poem" | "letter";
+  /** Video model key (FAL). Defaults to Veo 3. */
+  videoModel?: string;
   /** Asset mode: text, image, video, or both. Defaults to text. */
   assetMode?: AssetMode;
 }
@@ -206,6 +208,7 @@ export async function generateStory(
       style: input.style ?? "cinematic",
       title: story.title,
       hook: story.hook,
+      videoModel: input.videoModel,
     });
     story.assets = assets;
   }

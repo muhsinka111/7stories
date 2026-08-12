@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CATEGORIES, VISUAL_STYLES, FORMATS, categoryToPlot } from "@/lib/categories";
-import { AssetMode } from "@/lib/media";
+import { AssetMode, VIDEO_MODELS } from "@/lib/media";
 
 interface StorySection {
   heading: string;
@@ -33,6 +33,7 @@ export default function StoryGenerator() {
   const [category, setCategory] = useState(CATEGORIES[0].key);
   const [style, setStyle] = useState("cinematic");
   const [format, setFormat] = useState("story");
+  const [videoModel, setVideoModel] = useState(VIDEO_MODELS[0].key);
   const [company, setCompany] = useState("");
   const [facts, setFacts] = useState("");
   const [output, setOutput] = useState<AssetMode>("text");
@@ -56,6 +57,7 @@ export default function StoryGenerator() {
           category,
           style,
           format,
+          videoModel,
           company,
           facts,
           tone: "professional",
@@ -205,6 +207,32 @@ export default function StoryGenerator() {
               </button>
             ))}
           </div>
+        </div>
+
+        <div>
+          <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">
+            7 · Video engine
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {VIDEO_MODELS.map((v) => (
+              <button
+                type="button"
+                key={v.key}
+                onClick={() => setVideoModel(v.key)}
+                title={v.hint}
+                className={`px-3 py-1.5 rounded-lg border text-sm transition-all ${
+                  v.key === videoModel
+                    ? "border-[--accent]/60 bg-[--accent]/10"
+                    : "border-[--border] hover:bg-white/5"
+                }`}
+              >
+                {v.label} <span className="text-[10px] text-[--muted]">· {v.vendor}</span>
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] text-[--muted] mt-1">
+            Used when output includes video. Veo 3 is the most cinematic.
+          </p>
         </div>
 
         <button
