@@ -25,6 +25,8 @@ export interface GenerateInput {
   category?: string;
   /** Visual style (cinematic, photoreal, anime, …). Defaults to cinematic. */
   style?: string;
+  /** Output format. Defaults to story. */
+  format?: "story" | "book" | "poem" | "letter";
   /** Asset mode: text, image, video, or both. Defaults to text. */
   assetMode?: AssetMode;
 }
@@ -60,9 +62,18 @@ function toneLine(tone: GenerateInput["tone"]): string {
 
 function buildSystemPrompt(plot: Plot, input: GenerateInput): string {
   const audience = getAudience(input.audience ?? "brand");
+  const fmt = input.format ?? "story";
+  const formatLine: Record<string, string> = {
+    story: "Write a flowing narrative story.",
+    book: "Write this as a book — title, hook, and sections that read like chapters.",
+    poem: "Write this as a poem — each section is a stanza, with rhythm and imagery.",
+    letter: "Write this as a heartfelt letter, addressed warmly to the subject.",
+  };
   return [
     "You are 7stories, a professional storytelling assistant.",
     `You write a story for the "${audience.label}" audience about "${input.company}" using the "${plot.title}" narrative archetype.`,
+    "",
+    `FORMAT: ${formatLine[fmt] ?? formatLine.story}`,
     "",
     `AUDIENCE — ${audience.label} storytelling:`,
     `- What to tell: ${audience.whatToTell}`,

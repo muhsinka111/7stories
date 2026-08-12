@@ -7,8 +7,10 @@ import type { AudienceKey } from "@/lib/audiences";
 import type { PlotKey } from "@/lib/plots";
 import type { GeneratedStory } from "@/lib/story";
 import type { AssetMode, MediaAsset } from "@/lib/media";
-import { loadLibrary, saveStory, deleteStory, updateStory, newId, SavedStory, StoryStatus } from "@/lib/library";
+import { newId, SavedStory, StoryStatus } from "@/lib/library";
+import { isAuthed, loadStories, saveStory, updateStory, deleteStory } from "@/lib/storiesClient";
 import AccountPanel from "./AccountPanel";
+import SettingsPanel from "./SettingsPanel";
 
 const TONES = [
   { key: "professional", label: "Professional" },
@@ -78,6 +80,7 @@ type View =
   | { name: "library" }
   | { name: "new" }
   | { name: "account" }
+  | { name: "settings" }
   | { name: "view"; id: string };
 
 type DisplayMode = "grid" | "table";
@@ -98,12 +101,17 @@ const DEFAULT_FILTERS: Filters = {
 
 export default function Dashboard() {
   const [library, setLibrary] = useState<SavedStory[]>([]);
+  const [authed, setAuthed] = useState(false);
   const [view, setView] = useState<View>({ name: "library" });
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [mode, setMode] = useState<DisplayMode>("grid");
 
   useEffect(() => {
-    setLibrary(loadLibrary());
+    (async () => {
+      const a = await isAuthed();
+      setAuthed(a);
+      setLibrary(await loadStories(a));
+    })();
   }, []);
 
   const stats = useMemo(() => {
@@ -212,6 +220,14 @@ export default function Dashboard() {
             🔐 Account & Files
           </button>
           <button
+            onClick={() => setView({ name: "settings" })}
+            className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 ${
+              view.name === "settings" ? "bg-white/10 text-[--ink]" : "text-[--muted] hover:bg-white/5"
+            }`}
+          >
+            ⚙️ Settings
+          </button>
+          <button
             onClick={() => setView({ name: "new" })}
             className="btn btn-primary w-full justify-center"
           >
@@ -224,8 +240,8 @@ export default function Dashboard() {
       <main className="flex-1 p-6 md:p-10">
         {view.name === "new" && (
           <CreateStory
-            onSaved={(s) => {
-              setLibrary(saveStory(s));
+            onSaved={async (s) => {
+              setLibrary(await saveStory(authed, s));
               setView({ name: "view", id: s.id });
             }}
           />
@@ -233,13 +249,15 @@ export default function Dashboard() {
 
         {view.name === "account" && <AccountPanel />}
 
+        {view.name === "settings" && <SettingsPanel />}
+
         {view.name === "view" && activeStory && (
           <StoryViewer
             story={activeStory}
             onBack={() => setView({ name: "library" })}
-            onStatus={(id, status) => setLibrary(updateStory(id, { status }))}
-            onDelete={(id) => {
-              setLibrary(deleteStory(id));
+            onStatus={async (id, status) => setLibrary(await updateStory(authed, id, { status }))}
+            onDelete={async (id) => {
+              setLibrary(await deleteStory(authed, id));
               setView({ name: "library" });
             }}
           />

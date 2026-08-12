@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CATEGORIES, VISUAL_STYLES, categoryToPlot } from "@/lib/categories";
+import { CATEGORIES, VISUAL_STYLES, FORMATS, categoryToPlot } from "@/lib/categories";
 import { AssetMode } from "@/lib/media";
 
 interface StorySection {
@@ -32,6 +32,7 @@ const OUTPUTS: { key: AssetMode; label: string; icon: string; desc: string }[] =
 export default function StoryGenerator() {
   const [category, setCategory] = useState(CATEGORIES[0].key);
   const [style, setStyle] = useState("cinematic");
+  const [format, setFormat] = useState("story");
   const [company, setCompany] = useState("");
   const [facts, setFacts] = useState("");
   const [output, setOutput] = useState<AssetMode>("text");
@@ -54,6 +55,7 @@ export default function StoryGenerator() {
           plotKey: categoryToPlot(category),
           category,
           style,
+          format,
           company,
           facts,
           tone: "professional",
@@ -135,7 +137,29 @@ export default function StoryGenerator() {
 
         <div>
           <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">
-            3 · Subject / title
+            3 · Format
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {FORMATS.map((f) => (
+              <button
+                type="button"
+                key={f.key}
+                onClick={() => setFormat(f.key)}
+                className={`px-3 py-1.5 rounded-lg border text-sm transition-all ${
+                  f.key === format
+                    ? "border-amber-400/60 bg-amber-400/10"
+                    : "border-[--border] hover:bg-white/5"
+                }`}
+              >
+                {f.icon} {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">
+            4 · Subject / title
           </label>
           <input
             value={company}
@@ -147,7 +171,7 @@ export default function StoryGenerator() {
 
         <div>
           <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">
-            4 · What happened?
+            5 · What happened?
           </label>
           <textarea
             required
@@ -161,7 +185,7 @@ export default function StoryGenerator() {
 
         <div>
           <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">
-            5 · Output
+            6 · Output
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {OUTPUTS.map((m) => (
