@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
 
-  const { plotKey, facts, company, tone, audience, assetMode } = body ?? {};
+  const { plotKey, facts, company, tone, audience, category, style, assetMode } = body ?? {};
 
   if (typeof plotKey !== "string" || typeof facts !== "string") {
     return NextResponse.json(
@@ -33,6 +33,8 @@ export async function POST(request: Request) {
       company: typeof company === "string" ? company : "",
       tone,
       audience,
+      category: typeof category === "string" ? category : undefined,
+      style: typeof style === "string" ? style : undefined,
       assetMode: ["text", "image", "video", "both"].includes(assetMode)
         ? assetMode
         : "text",

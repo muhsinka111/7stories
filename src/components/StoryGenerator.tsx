@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PLOTS } from "@/lib/plots";
+import { CATEGORIES, VISUAL_STYLES, categoryToPlot } from "@/lib/categories";
 import { AssetMode } from "@/lib/media";
 
 interface StorySection {
@@ -22,20 +22,21 @@ interface GeneratedStory {
   assets?: MediaAsset[];
 }
 
-const ASSET_MODES: { key: AssetMode; label: string; icon: string; desc: string }[] = [
-  { key: "text", label: "Text", icon: "✍️", desc: "Story only" },
-  { key: "image", label: "Image", icon: "🖼️", desc: "+ cover image" },
-  { key: "video", label: "Video", icon: "🎬", desc: "+ story video" },
+const OUTPUTS: { key: AssetMode; label: string; icon: string; desc: string }[] = [
+  { key: "text", label: "Story", icon: "✍️", desc: "Written only" },
+  { key: "image", label: "+ Image", icon: "🖼️", desc: "cinematic cover" },
+  { key: "video", label: "+ Video", icon: "🎬", desc: "cinematic film" },
   { key: "both", label: "Both", icon: "🎥", desc: "image + video" },
 ];
 
 export default function StoryGenerator() {
-  const [plotKey, setPlotKey] = useState(PLOTS[0].key);
+  const [category, setCategory] = useState(CATEGORIES[0].key);
+  const [style, setStyle] = useState("cinematic");
   const [company, setCompany] = useState("");
   const [facts, setFacts] = useState("");
-  const [assetMode, setAssetMode] = useState<AssetMode>("text");
+  const [output, setOutput] = useState<AssetMode>("text");
   const [loading, setLoading] = useState(false);
-  const [phase, setPhase] = useState<string>("");
+  const [phase, setPhase] = useState("");
   const [story, setStory] = useState<GeneratedStory | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,16 +50,22 @@ export default function StoryGenerator() {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plotKey, company, facts, tone: "professional", assetMode }),
+        body: JSON.stringify({
+          plotKey: categoryToPlot(category),
+          category,
+          style,
+          company,
+          facts,
+          tone: "professional",
+          assetMode: output,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
         if (data.error === "config_missing") {
-          setError(
-            "Story engine isn't configured yet. Add OPENAI_API_KEY (text) and FAL_KEY (image/video) to .env.local."
-          );
+          setError("Story engine isn't configured yet (OPENAI_API_KEY missing).");
         } else if (data.error === "media_config_missing") {
-          setError(data.message || "Image/video needs FAL_KEY in .env.local.");
+          setError(data.message || "Image/video needs FAL_KEY.");
         } else {
           setError(data.message || "Generation failed.");
         }
@@ -73,29 +80,54 @@ export default function StoryGenerator() {
     }
   }
 
+  const cat = CATEGORIES.find((c) => c.key === category)!;
+
   return (
     <div className="grid lg:grid-cols-2 gap-8">
       {/* Form */}
-      <form onSubmit={generate} className="card p-6 md:p-8 space-y-5">
+      <form onSubmit={generate} className="card p-6 md:p-8 space-y-6">
         <div>
           <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">
-            1 · Choose your story arc
+            1 · What kind of story?
           </label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {PLOTS.map((p) => (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {CATEGORIES.map((c) => (
               <button
                 type="button"
-                key={p.key}
-                onClick={() => setPlotKey(p.key)}
-                className={`px-3 py-2.5 rounded-lg border text-left text-sm transition-all ${
-                  p.key === plotKey
+                key={c.key}
+                onClick={() => setCategory(c.key)}
+                title={c.description}
+                className={`px-3 py-2.5 rounded-lg border text-left transition-all ${
+                  c.key === category
                     ? "border-amber-400/60 bg-amber-400/10"
                     : "border-[--border] hover:bg-white/5"
                 }`}
               >
-                <div className="font-semibold truncate">
-                  {p.emoji} {p.title}
-                </div>
+                <div className="text-lg mb-1">{c.emoji}</div>
+                <div className="font-semibold text-sm truncate">{c.label}</div>
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-[--muted] mt-2">{cat.tagline}</p>
+        </div>
+
+        <div>
+          <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">
+            2 · Visual style
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {VISUAL_STYLES.map((s) => (
+              <button
+                type="button"
+                key={s.key}
+                onClick={() => setStyle(s.key)}
+                className={`px-3 py-1.5 rounded-lg border text-sm transition-all ${
+                  s.key === style
+                    ? "border-amber-400/60 bg-amber-400/10"
+                    : "border-[--border] hover:bg-white/5"
+                }`}
+              >
+                {s.label}
               </button>
             ))}
           </div>
@@ -103,44 +135,42 @@ export default function StoryGenerator() {
 
         <div>
           <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">
-            2 · Brand / company
+            3 · Subject / title
           </label>
           <input
-            id="company"
             value={company}
             onChange={(e) => setCompany(e.target.value)}
-            placeholder="e.g. Northwind Analytics"
+            placeholder="e.g. Grandma Rosa's journey"
             className="w-full px-4 py-3"
           />
         </div>
 
         <div>
           <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">
-            3 · Paste your raw material
+            4 · What happened?
           </label>
           <textarea
-            id="facts"
             required
             rows={6}
             value={facts}
             onChange={(e) => setFacts(e.target.value)}
-            placeholder="Customer challenge, solution, results, metrics, quotes…"
+            placeholder={cat.starterPrompt}
             className="w-full px-4 py-3 resize-none"
           />
         </div>
 
         <div>
           <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">
-            4 · Output type
+            5 · Output
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {ASSET_MODES.map((m) => (
+            {OUTPUTS.map((m) => (
               <button
                 type="button"
                 key={m.key}
-                onClick={() => setAssetMode(m.key)}
+                onClick={() => setOutput(m.key)}
                 className={`px-3 py-3 rounded-lg border text-center transition-all ${
-                  m.key === assetMode
+                  m.key === output
                     ? "border-amber-400/60 bg-amber-400/10"
                     : "border-[--border] hover:bg-white/5"
                 }`}
@@ -174,11 +204,8 @@ export default function StoryGenerator() {
           <div className="h-full flex flex-col items-center justify-center text-center text-[--muted]">
             <div className="text-4xl mb-4">🪄</div>
             <p className="max-w-xs">
-              Your story will appear here — built on the{" "}
-              <span className="text-[--accent] font-semibold">
-                {PLOTS.find((p) => p.key === plotKey)?.title}
-              </span>{" "}
-              arc.
+              Your {cat.label.toLowerCase()} story will appear here — cinematic, on-brand, and built to
+              move people.
             </p>
           </div>
         )}
@@ -197,19 +224,9 @@ export default function StoryGenerator() {
                 {story.assets.map((a, i) =>
                   a.kind === "image" ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      key={i}
-                      src={a.url}
-                      alt={story.title}
-                      className="w-full rounded-xl object-cover border border-[--border]"
-                    />
+                    <img key={i} src={a.url} alt={story.title} className="w-full rounded-xl object-cover border border-[--border]" />
                   ) : (
-                    <video
-                      key={i}
-                      src={a.url}
-                      controls
-                      className="w-full rounded-xl border border-[--border]"
-                    />
+                    <video key={i} src={a.url} controls className="w-full rounded-xl border border-[--border]" />
                   )
                 )}
                 {story.assets.length > 0 && (
@@ -237,8 +254,7 @@ export default function StoryGenerator() {
             )}
             <div className="pt-4 border-t border-[--border]">
               <p className="text-sm text-[--muted]">
-                <span className="font-semibold text-[--ink]">Next step:</span>{" "}
-                {story.cta}
+                <span className="font-semibold text-[--ink]">Next step:</span> {story.cta}
               </p>
             </div>
           </article>

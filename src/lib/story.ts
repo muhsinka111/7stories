@@ -21,6 +21,10 @@ export interface GenerateInput {
   audience?: "brand" | "company" | "family";
   /** Tone preference. */
   tone?: "professional" | "warm" | "bold" | "empathetic";
+  /** Category (wedding, newborn, family, brand, …). Defaults to brand. */
+  category?: string;
+  /** Visual style (cinematic, photoreal, anime, …). Defaults to cinematic. */
+  style?: string;
   /** Asset mode: text, image, video, or both. Defaults to text. */
   assetMode?: AssetMode;
 }
@@ -187,7 +191,8 @@ export async function generateStory(
   const mode: AssetMode = input.assetMode ?? "text";
   if (mode !== "text") {
     const { assets } = await generateStoryAssets(mode, {
-      audience: input.audience ?? "brand",
+      category: input.category ?? "brand",
+      style: input.style ?? "cinematic",
       title: story.title,
       hook: story.hook,
     });

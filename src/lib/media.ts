@@ -45,19 +45,22 @@ export function mediaProviders(): { image?: string; video?: string } {
 
 /** A short, visual, asset-friendly rendering prompt derived from a story. */
 export function visualPrompt(
-  audience: string,
   title: string,
   hook: string,
-  styleHint?: string
+  style: string,
+  categoryLabel: string
 ): string {
-  const style =
-    styleHint ||
-    (audience === "family"
-      ? "warm, nostalgic, cinematic, soft light"
-      : audience === "company"
-        ? "premium editorial corporate photography, refined"
-        : "bold cinematic brand commercial, high contrast");
-  return `Cinematic ${style} key visual for a story titled "${title}". ${hook}`;
+  const styleDesc: Record<string, string> = {
+    cinematic: "ultra-realistic cinematic film still, 35mm, shallow depth of field, dramatic golden-hour lighting, anamorphic, high detail, movie-quality color grade",
+    photoreal: "ultra-photorealistic, professional studio photography, natural light, tack-sharp detail, 50mm lens",
+    anime: "high-end anime key visual, Studio Ghibli inspired, rich painterly backgrounds, expressive, cinematic composition",
+    illustration: "beautiful hand-painted book illustration, storybook style, warm textures, whimsical, detailed",
+    vintage: "vintage film photograph, warm faded tones, film grain, nostalgic 1970s aesthetic, soft light",
+    dreamy: "dreamy ethereal aesthetic, soft focus, pastel tones, gentle light, romantic atmosphere",
+    documentary: "cinematic documentary still, naturalistic, candid, authentic, gritty real-world texture",
+  };
+  const styleText = styleDesc[style] ?? styleDesc.cinematic;
+  return `A ${styleText} key visual for a ${categoryLabel.toLowerCase()} story titled "${title}". ${hook}. Aim for emotional impact and cinematic composition, no text in the image.`;
 }
 
 // ─────────────────────────── Image generation ───────────────────────────
@@ -84,8 +87,9 @@ async function pollFal(requestUrl: string, key: string, timeoutMs = 120000): Pro
 
 async function imageViaFAL(prompt: string): Promise<string> {
   const key = process.env.FAL_KEY!;
-  // fal-ai/flux/schnell — fast (<5s), decent quality cover images for good UX.
-  const res = await fetch("https://queue.fal.run/fal-ai/flux/schnell", {
+  // High-quality cinematic image model (configurable via FAL_IMAGE_MODEL).
+  const model = process.env.FAL_IMAGE_MODEL || "fal-ai/flux-pro/v1.1-ultra";
+  const res = await fetch(`https://queue.fal.run/${model}`, {
     method: "POST",
     headers: {
       Authorization: `Key ${key}`,
@@ -181,10 +185,13 @@ export async function generateImage(prompt: string): Promise<MediaAsset> {
 
 async function videoViaFAL(prompt: string): Promise<string> {
   const key = process.env.FAL_KEY!;
-  const res = await fetch("https://queue.fal.run/fal-ai/ltx-video", {
+  // Cinematic video model (configurable via FAL_VIDEO_MODEL). Veo 3 for
+  // premium cinematic motion; Kling 1.6 / Wan 2.2 are strong alternatives.
+  const model = process.env.FAL_VIDEO_MODEL || "fal-ai/veo3";
+  const res = await fetch(`https://queue.fal.run/${model}`, {
     method: "POST",
     headers: { Authorization: `Key ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, num_frames: 121, resolution: "768x1280" }),
+    body: JSON.stringify({ prompt, duration: "short" }),
   });
   if (!res.ok) {
     const t = await res.text();
@@ -245,11 +252,11 @@ export async function generateVideo(prompt: string): Promise<MediaAsset> {
  */
 export async function generateStoryAssets(
   mode: AssetMode,
-  opts: { audience: string; title: string; hook: string }
+  opts: { category: string; style: string; title: string; hook: string }
 ): Promise<MediaResult> {
   if (mode === "text") return { assets: [], providers: mediaProviders() };
   const providers = mediaProviders();
-  const prompt = visualPrompt(opts.audience, opts.title, opts.hook);
+  const prompt = visualPrompt(opts.title, opts.hook, opts.style, opts.category);
   const assets: MediaAsset[] = [];
 
   if (mode === "image" || mode === "both") {
