@@ -1,0 +1,38 @@
+[
+  {
+    "cat": "wedding",
+    "label": "Wedding",
+    "prompt": "A cinematic golden-hour wedding scene: a couple on a cliffside with soft bokeh lights, elegant, emotional, movie still, shallow depth of field, no text",
+    "image": "https://v3b.fal.media/files/b/0aa60fd5/JgJElEs_5nkDLe0iKG9C6.jpg"
+  },
+  {
+    "cat": "newborn",
+    "label": "Newborn",
+    "prompt": "A dreamy newborn portrait: soft pastel light, gentle hands cradling a sleeping baby, tender, warm, cinematic, no text",
+    "image": "https://v3b.fal.media/files/b/0aa60fd6/Iqb_9AtopZtJbIsw3dmbs.jpg"
+  },
+  {
+    "cat": "family",
+    "label": "Family",
+    "prompt": "A warm vintage family portrait: three generations together in warm sunlight, nostalgic film grain, emotional, cinematic, no text",
+    "image": "https://v3b.fal.media/files/b/0aa60fd6/iE07NTGj5H9VCM0npX0bO.jpg"
+  },
+  {
+    "cat": "travel",
+    "label": "Travel",
+    "prompt": "A sweeping cinematic travel vista: a lone traveler overlooking a dramatic mountain valley at sunrise, epic, cinematic, no text",
+    "image": "https://v3b.fal.media/files/b/0aa60fd6/knK9Pp-LBDXoiBa4OBYw_.jpg"
+  },
+  {
+    "cat": "brand",
+    "label": "Brand",
+    "prompt": "A bold cinematic brand commercial still: a confident founder walking through a modern office, dramatic lighting, high contrast, no text",
+    "image": "https://v3b.fal.media/files/b/0aa60fd6/9Q54Mfhp2VfLq9xKkyiq3.jpg"
+  },
+  {
+    "cat": "baby",
+    "label": "Baby",
+    "prompt": "A playful cinematic moment of a toddler taking first steps, joy and motion, soft light, heartwarming, movie still, no text",
+    "image": "https://v3b.fal.media/files/b/0aa60fd7/zCbtzYyGh54uegnFKRdue.jpg"
+  }
+]
