@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { generateStory } from "@/lib/story";
 import { MediaConfigError } from "@/lib/media";
+import { getSupabaseAdmin, getUserFromToken } from "@/lib/supabase";
+import { getSessionToken } from "@/lib/session";
 
 /**
  * POST /api/generate
@@ -14,7 +16,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
 
-  const { plotKey, facts, company, tone, audience, category, style, assetMode } = body ?? {};
+  const { plotKey, facts, company, tone, audience, category, style, assetMode, docIds } = body ?? {};
 
   if (typeof plotKey !== "string" || typeof facts !== "string") {
     return NextResponse.json(
@@ -26,10 +28,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "facts_required" }, { status: 400 });
   }
 
+  // Attach uploaded document text as story context when the user supplies docIds.
+  let mergedFacts: string = facts;
+  if (Array.isArray(docIds) && docIds.length) {
+    const token = await getSessionToken();
+    const user = await getUserFromToken(token);
+    if (user) {
+      const supabase = getSupabaseAdmin();
+      const { data } = await supabase
+        .from("documents")
+        .select("name,text_content")
+        .in("id", docIds)
+        .eq("user_id", user.id);
+      const context = (data || [])
+        .map((d) => `[${d.name}]\n${(d.text_content || "").slice(0, 8000)}`)
+        .join("\n\n");
+      if (context) mergedFacts = `CONTEXT DOCUMENTS:\n${context}\n\n${facts}`;
+    }
+  }
+
   try {
     const story = await generateStory({
       plotKey,
-      facts,
+      facts: mergedFacts,
       company: typeof company === "string" ? company : "",
       tone,
       audience,

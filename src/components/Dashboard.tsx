@@ -7,15 +7,8 @@ import type { AudienceKey } from "@/lib/audiences";
 import type { PlotKey } from "@/lib/plots";
 import type { GeneratedStory } from "@/lib/story";
 import type { AssetMode, MediaAsset } from "@/lib/media";
-import {
-  loadLibrary,
-  saveStory,
-  deleteStory,
-  updateStory,
-  newId,
-  SavedStory,
-  StoryStatus,
-} from "@/lib/library";
+import { loadLibrary, saveStory, deleteStory, updateStory, newId, SavedStory, StoryStatus } from "@/lib/library";
+import AccountPanel from "./AccountPanel";
 
 const TONES = [
   { key: "professional", label: "Professional" },
@@ -84,6 +77,7 @@ function MediaBlock({ assets, alt }: { assets: MediaAsset[]; alt: string }) {
 type View =
   | { name: "library" }
   | { name: "new" }
+  | { name: "account" }
   | { name: "view"; id: string };
 
 type DisplayMode = "grid" | "table";
@@ -208,12 +202,22 @@ export default function Dashboard() {
           ))}
         </nav>
 
-        <button
-          onClick={() => setView({ name: "new" })}
-          className="btn btn-primary w-full justify-center"
-        >
-          ✨ New story
-        </button>
+        <div className="space-y-2">
+          <button
+            onClick={() => setView({ name: "account" })}
+            className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 ${
+              view.name === "account" ? "bg-white/10 text-[--ink]" : "text-[--muted] hover:bg-white/5"
+            }`}
+          >
+            🔐 Account & Files
+          </button>
+          <button
+            onClick={() => setView({ name: "new" })}
+            className="btn btn-primary w-full justify-center"
+          >
+            ✨ New story
+          </button>
+        </div>
       </aside>
 
       {/* Content */}
@@ -226,6 +230,8 @@ export default function Dashboard() {
             }}
           />
         )}
+
+        {view.name === "account" && <AccountPanel />}
 
         {view.name === "view" && activeStory && (
           <StoryViewer

@@ -71,3 +71,24 @@ drop trigger if exists stories_touch_updated on public.stories;
 create trigger stories_touch_updated
   before update on public.stories
   for each row execute procedure public.touch_updated_at();
+
+-- ── Documents (uploaded context files — PDFs, notes, etc.) ─────────────
+create table if not exists public.documents (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  name text not null,
+  content_type text,
+  size_bytes bigint default 0,
+  text_content text,
+  created_at timestamptz not null default now()
+);
+alter table public.documents enable row level security;
+
+create index if not exists documents_user_idx on public.documents (user_id);
+
+create policy "Users can read own documents"
+  on public.documents for select using (auth.uid() = user_id);
+create policy "Users can insert own documents"
+  on public.documents for insert with check (auth.uid() = user_id);
+create policy "Users can delete own documents"
+  on public.documents for delete using (auth.uid() = user_id);
