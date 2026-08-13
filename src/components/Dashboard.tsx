@@ -12,6 +12,7 @@ import { isAuthed, loadStories, saveStory, updateStory, deleteStory } from "@/li
 import { useToast } from "@/components/Toast";
 import AccountPanel from "./AccountPanel";
 import SettingsPanel from "./SettingsPanel";
+import StatsPanel from "./StatsPanel";
 
 const TONES = [
   { key: "professional", label: "Professional" },
@@ -82,6 +83,7 @@ type View =
   | { name: "new" }
   | { name: "account" }
   | { name: "settings" }
+  | { name: "stats" }
   | { name: "view"; id: string };
 
 type DisplayMode = "grid" | "table";
@@ -257,6 +259,14 @@ export default function Dashboard() {
             >
               ⚙️ Settings
             </button>
+            <button
+              onClick={() => setView({ name: "stats" })}
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 ${
+                view.name === "stats" ? "bg-white/10 text-[--ink]" : "text-[--muted] hover:bg-white/5"
+              }`}
+            >
+              📊 Stats
+            </button>
           </div>
         </nav>
       </aside>
@@ -271,7 +281,7 @@ export default function Dashboard() {
         <header className="sticky top-0 z-30 flex items-center gap-3 px-4 md:px-10 py-4 border-b border-[--border] bg-[--bg]/80 backdrop-blur-xl">
           <button onClick={() => setMobileNav((v) => !v)} className="md:hidden w-9 h-9 grid place-items-center rounded-lg border border-[--border] text-lg" aria-label="Menu">☰</button>
           <div className="text-sm font-semibold text-[--ink]">
-            {view.name === "library" ? "Your library" : view.name === "new" ? "Create" : view.name === "account" ? "Account & Files" : view.name === "settings" ? "Settings" : "Story"}
+            {view.name === "library" ? "Your library" : view.name === "new" ? "Create" : view.name === "account" ? "Account & Files" : view.name === "settings" ? "Settings" : view.name === "stats" ? "Analytics" : "Story"}
           </div>
           <div className="ml-auto flex items-center gap-3">
             <a href="/credits" className="chip hover:border-[--accent]/50 hover:text-[--ink]" title="Your credit balance — click to buy more">
@@ -302,6 +312,7 @@ export default function Dashboard() {
         {view.name === "account" && <AccountPanel />}
 
         {view.name === "settings" && <SettingsPanel />}
+        {view.name === "stats" && <StatsPanel />}
 
         {view.name === "view" && activeStory && (
           <StoryViewer
