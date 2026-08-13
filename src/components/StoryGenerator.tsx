@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { CATEGORIES, VISUAL_STYLES, FORMATS, categoryToPlot, recommendedStyles } from "@/lib/categories";
 import { AssetMode, VIDEO_MODELS, IMAGE_MODELS } from "@/lib/media";
@@ -44,12 +44,48 @@ export default function StoryGenerator() {
   const [language, setLanguage] = useState("English");
   const [aspectRatio, setAspectRatio] = useState("16:9");
   const [resolution, setResolution] = useState("1080p");
+  const [platform, setPlatform] = useState("custom");
+  const PLATFORMS = [
+    { key: "custom", label: "Custom", ratio: null, res: null },
+    { key: "tiktok", label: "TikTok / Reels", ratio: "9:16", res: "1080p" },
+    { key: "youtube", label: "YouTube / Ads", ratio: "16:9", res: "1080p" },
+    { key: "instagram", label: "Instagram", ratio: "1:1", res: "1080p" },
+    { key: "cinematic", label: "Cinematic", ratio: "21:9", res: "1080p" },
+  ] as const;
+  function applyPlatform(k: string) {
+    setPlatform(k);
+    const p = PLATFORMS.find((x) => x.key === k);
+    if (p && p.ratio) setAspectRatio(p.ratio as string);
+    if (p && p.res) setResolution(p.res as string);
+  }
   const [enhancing, setEnhancing] = useState(false);
   const [enhanceMsg, setEnhanceMsg] = useState<string | null>(null);
   const [company, setCompany] = useState("");
   const [facts, setFacts] = useState("");
   const [refImages, setRefImages] = useState<string[]>([]);
   const [refUrl, setRefUrl] = useState("");
+  const [characters, setCharacters] = useState<{ id: string; name: string; image_url: string }[]>([]);
+  const [charName, setCharName] = useState("");
+  useEffect(() => { loadCharacters(); }, []);
+  async function loadCharacters() {
+    try { const r = await fetch("/api/characters"); const d = await r.json(); if (d.ok) setCharacters(d.characters); } catch {}
+  }
+  async function saveCharacter() {
+    if (!refImages[0] || !charName.trim()) { toast("Add a photo and name your character first.", "info"); return; }
+    const r = await fetch("/api/characters", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: charName.trim(), imageUrl: refImages[0] }),
+    });
+    const d = await r.json();
+    if (r.status === 401) { toast("Please sign in to save characters.", "info"); router.push("/login"); return; }
+    if (!d.ok) { toast(d.message || "Couldn't save character.", "error"); return; }
+    toast(`Character "${charName.trim()}" saved!`);
+    setCharName(""); await loadCharacters();
+  }
+  function useCharacter(c: { id: string; name: string; image_url: string }) {
+    setRefImages([c.image_url]);
+    toast(`Loaded character "${c.name}" — it will appear in your story.`);
+  }
   const [output, setOutput] = useState<AssetMode>("text");
   const [loading, setLoading] = useState(false);
   const [phase, setPhase] = useState("");
@@ -360,6 +396,42 @@ export default function StoryGenerator() {
           <p className="text-[11px] text-[--muted] mt-2">
             Used as visual reference for image & video generation.
           </p>
+
+          {/* Character builder */}
+          <div className="mt-4 pt-4 border-t border-[--border] space-y-3">
+            <p className="text-xs uppercase tracking-widest text-[--muted]">🧑 Your characters</p>
+            {characters.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {characters.map((c) => (
+                  <button
+                    type="button"
+                    key={c.id}
+                    onClick={() => useCharacter(c)}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg border border-[--border] hover:border-[--accent]/50 text-xs"
+                    title="Use this character in your story"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={c.image_url} alt={c.name} className="w-6 h-6 rounded object-cover" />
+                    {c.name}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[11px] text-[--muted]">No characters yet — upload a photo and save it to reuse the same face.</p>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                value={charName}
+                onChange={(e) => setCharName(e.target.value)}
+                placeholder="Character name (e.g. Elif)"
+                className="flex-1 min-w-[140px] px-3 py-2 text-sm"
+              />
+              <button type="button" onClick={saveCharacter} className="btn btn-ghost text-sm px-3 py-2 shrink-0">
+                💾 Save current photo as character
+              </button>
+            </div>
+            <p className="text-[10px] text-[--muted]">The first uploaded photo is saved. Use a clear face-on shot for best consistency.</p>
+          </div>
         </div>
 
         <div>
@@ -477,6 +549,22 @@ export default function StoryGenerator() {
 
         <div>
           <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">13 · Size & quality</label>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3">
+            {PLATFORMS.map((p) => (
+              <button
+                type="button"
+                key={p.key}
+                onClick={() => applyPlatform(p.key)}
+                className={`px-2 py-1.5 rounded-lg border text-[11px] transition-all ${
+                  platform === p.key
+                    ? "border-[--accent] bg-[--accent]/25 ring-1 ring-[--accent] text-[--ink]"
+                    : "border-[--border] text-[--muted] hover:text-[--ink]"
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
             {["16:9", "1:1", "9:16", "4:3"].map((r) => (
               <button
