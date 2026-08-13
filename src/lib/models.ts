@@ -25,8 +25,8 @@ export const LLM_MODELS: LlmModelOption[] = [
   { key: "claude-opus-4-20250514", label: "Claude Opus 4", vendor: "Anthropic", hint: "Highest capability", cost: 5, provider: "anthropic" },
   { key: "claude-3-5-haiku-20241022", label: "Claude Haiku 3.5", vendor: "Anthropic", hint: "Fast & efficient", cost: 0.3, provider: "anthropic" },
   // Google / Gemini
-  { key: "gemini-2.5-pro", label: "Gemini 2.5 Pro", vendor: "Google", hint: "Deep reasoning", cost: 2, provider: "google" },
-  { key: "gemini-2.5-flash", label: "Gemini 2.5 Flash", vendor: "Google", hint: "Fast & cheap", cost: 0.2, provider: "google" },
+  { key: "gemini-2.0-flash", label: "Gemini 2.0 Flash", vendor: "Google", hint: "Fast & reliable", cost: 0.3, provider: "google" },
+  { key: "gemini-1.5-flash", label: "Gemini 1.5 Flash", vendor: "Google", hint: "Fast & cheap", cost: 0.15, provider: "google" },
 ];
 
 export function getLlmModel(key?: string): LlmModelOption {
