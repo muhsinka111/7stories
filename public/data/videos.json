@@ -1,1 +1,122 @@
-[]
+[
+  {
+    "cat": "animation",
+    "label": "Animation sample",
+    "video": "https://assets.mixkit.co/videos/14111/14111-720.mp4",
+    "model": "mixkit"
+  },
+  {
+    "cat": "animation",
+    "label": "Animation sample",
+    "video": "https://assets.mixkit.co/videos/14151/14151-720.mp4",
+    "model": "mixkit"
+  },
+  {
+    "cat": "animation",
+    "label": "Animation sample",
+    "video": "https://assets.mixkit.co/videos/14540/14540-720.mp4",
+    "model": "mixkit"
+  },
+  {
+    "cat": "animation",
+    "label": "Animation sample",
+    "video": "https://assets.mixkit.co/videos/18052/18052-720.mp4",
+    "model": "mixkit"
+  },
+  {
+    "cat": "animation",
+    "label": "Animation sample",
+    "video": "https://assets.mixkit.co/videos/18140/18140-720.mp4",
+    "model": "mixkit"
+  },
+  {
+    "cat": "animation",
+    "label": "Animation sample",
+    "video": "https://assets.mixkit.co/videos/26798/26798-720.mp4",
+    "model": "mixkit"
+  },
+  {
+    "cat": "animation",
+    "label": "Animation sample",
+    "video": "https://assets.mixkit.co/videos/30031/30031-720.mp4",
+    "model": "mixkit"
+  },
+  {
+    "cat": "animation",
+    "label": "Animation sample",
+    "video": "https://assets.mixkit.co/videos/30059/30059-720.mp4",
+    "model": "mixkit"
+  },
+  {
+    "cat": "animation",
+    "label": "Animation sample",
+    "video": "https://assets.mixkit.co/videos/30605/30605-720.mp4",
+    "model": "mixkit"
+  },
+  {
+    "cat": "animation",
+    "label": "Animation sample",
+    "video": "https://assets.mixkit.co/videos/30889/30889-720.mp4",
+    "model": "mixkit"
+  },
+  {
+    "cat": "animation",
+    "label": "Animation sample",
+    "video": "https://assets.mixkit.co/videos/31497/31497-720.mp4",
+    "model": "mixkit"
+  },
+  {
+    "cat": "animation",
+    "label": "Animation sample",
+    "video": "https://assets.mixkit.co/videos/31549/31549-720.mp4",
+    "model": "mixkit"
+  },
+  {
+    "cat": "animation",
+    "label": "Animation sample",
+    "video": "https://assets.mixkit.co/videos/31562/31562-720.mp4",
+    "model": "mixkit"
+  },
+  {
+    "cat": "animation",
+    "label": "Animation sample",
+    "video": "https://assets.mixkit.co/videos/32910/32910-720.mp4",
+    "model": "mixkit"
+  },
+  {
+    "cat": "animation",
+    "label": "Animation sample",
+    "video": "https://assets.mixkit.co/videos/34045/34045-720.mp4",
+    "model": "mixkit"
+  },
+  {
+    "cat": "animation",
+    "label": "Animation sample",
+    "video": "https://assets.mixkit.co/videos/34317/34317-720.mp4",
+    "model": "mixkit"
+  },
+  {
+    "cat": "animation",
+    "label": "Animation sample",
+    "video": "https://assets.mixkit.co/videos/34352/34352-720.mp4",
+    "model": "mixkit"
+  },
+  {
+    "cat": "animation",
+    "label": "Animation sample",
+    "video": "https://assets.mixkit.co/videos/35540/35540-720.mp4",
+    "model": "mixkit"
+  },
+  {
+    "cat": "animation",
+    "label": "Animation sample",
+    "video": "https://assets.mixkit.co/videos/4192/4192-1080.mp4",
+    "model": "mixkit"
+  },
+  {
+    "cat": "animation",
+    "label": "Animation sample",
+    "video": "https://assets.mixkit.co/videos/4307/4307-720.mp4",
+    "model": "mixkit"
+  }
+]
