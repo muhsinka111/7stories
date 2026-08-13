@@ -1,0 +1,21 @@
+# 7stories
+
+> AI cinematic storytelling studio — turn any moment, brand, or project into a cinematic story with an AI-generated cover image or film.
+
+7stories lets you pick a category (wedding, newborn, baby, family, elders, books, pets, brand, product, events, travel, anniversary, memorial), add reference photos, choose your own AI language, image, and video models, and generate a story plus a cinematic image or film.
+
+## Key facts
+- Categories: wedding, newborn, baby, family, elders, books, pets, brand, product, events, travel, anniversary, memorial
+- Output formats: Story, Book, Poem, Letter, Story video
+- Image models: Flux Pro Ultra, Nano Banana (Gemini 2.5 Flash), Seedream 4.5, and more
+- Video models: Veo 3, Kling, Seedance, MiniMax, Wan, LTX, Hunyuan, Mochi, Runway, Pika and more
+- Language models: GPT-4.1, GPT-4o, o3-mini, GPT-4o mini
+- Users can upload reference photos, enhance prompts with AI, and save stories to a cloud library.
+
+## Pages
+- Landing / studio: https://7stories.com/
+- Templates: https://7stories.com/templates
+- FAQ: https://7stories.com/faq
+
+## Optional
+For support or questions about 7stories, users can use the site's studio and template pages.

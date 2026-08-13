@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CATEGORIES, VISUAL_STYLES, FORMATS, categoryToPlot, recommendedStyles } from "@/lib/categories";
 import { AssetMode, VIDEO_MODELS, IMAGE_MODELS } from "@/lib/media";
 import { LLM_MODELS } from "@/lib/models";
+import { useToast } from "@/components/Toast";
 
 interface StorySection {
   heading: string;
@@ -48,6 +49,7 @@ export default function StoryGenerator() {
   const [phase, setPhase] = useState("");
   const [story, setStory] = useState<GeneratedStory | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   async function generate(e: React.FormEvent) {
     e.preventDefault();
@@ -78,16 +80,22 @@ export default function StoryGenerator() {
       if (!res.ok) {
         if (data.error === "config_missing") {
           setError("Story engine isn't configured yet (OPENAI_API_KEY missing).");
+          toast("Story engine isn't configured yet.", "error");
         } else if (data.error === "media_config_missing") {
           setError(data.message || "Image/video needs FAL_KEY.");
+          toast(data.message || "Image/video needs FAL_KEY.", "error");
         } else {
           setError(data.message || "Generation failed.");
+          toast(data.message || "Generation failed.", "error");
         }
         return;
       }
       setStory(data.story);
+      toast("Your story is ready!");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      const m = err instanceof Error ? err.message : "Something went wrong.";
+      setError(m);
+      toast(m, "error");
     } finally {
       setLoading(false);
       setPhase("");

@@ -37,6 +37,7 @@ export default function Gallery() {
                     loop
                     playsInline
                     autoPlay
+                    preload="none"
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <figcaption className="absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-black/80 to-transparent flex items-center gap-2">
@@ -60,6 +61,8 @@ export default function Gallery() {
               <img
                 src={g.image}
                 alt={g.label}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
               />
               <figcaption className="absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-black/80 to-transparent flex items-center gap-2">

@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/Toast";
 
 export default function AuthForm() {
   const router = useRouter();
+  const { toast } = useToast();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,13 +26,16 @@ export default function AuthForm() {
     const data = await res.json();
     setBusy(false);
     if (!res.ok) {
+      toast(data.error || "Something went wrong.", "error");
       setMsg(data.error || "Something went wrong.");
       return;
     }
     if (data.needsConfirmation) {
+      toast("Check your email to confirm your account.", "info");
       setMsg("Check your email to confirm your account, then log in.");
       return;
     }
+    toast(mode === "login" ? "Welcome back!" : "Account created — welcome to 7stories!");
     router.push("/dashboard");
   }
 

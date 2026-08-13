@@ -9,6 +9,7 @@ import type { GeneratedStory } from "@/lib/story";
 import type { AssetMode, MediaAsset } from "@/lib/media";
 import { newId, SavedStory, StoryStatus } from "@/lib/library";
 import { isAuthed, loadStories, saveStory, updateStory, deleteStory } from "@/lib/storiesClient";
+import { useToast } from "@/components/Toast";
 import AccountPanel from "./AccountPanel";
 import SettingsPanel from "./SettingsPanel";
 
@@ -106,6 +107,8 @@ export default function Dashboard() {
   const [view, setView] = useState<View>({ name: "library" });
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [mode, setMode] = useState<DisplayMode>("grid");
+  const [mobileNav, setMobileNav] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     (async () => {
@@ -172,7 +175,7 @@ export default function Dashboard() {
   return (
     <div className="flex min-h-screen bg-[--bg]">
       {/* Sidebar */}
-      <aside className="w-64 shrink-0 border-r border-[--border] bg-[--panel]/40 backdrop-blur-xl flex flex-col sticky top-0 h-screen px-5 pt-5 pb-6 overflow-hidden">
+      <aside className={`${mobileNav ? "flex" : "hidden"} md:flex flex-col fixed md:static inset-y-0 left-0 z-40 w-64 shrink-0 border-r border-[--border] bg-[--bg] md:bg-[--panel]/40 md:backdrop-blur-xl px-5 pt-5 pb-6 overflow-y-auto`}>
         <button
           onClick={() => setView({ name: "library" })}
           className="flex items-center gap-2.5 mb-6 text-left"
@@ -190,7 +193,7 @@ export default function Dashboard() {
           ✨ New story
         </button>
 
-        <nav className="flex-1 space-y-6 overflow-y-auto">
+        <nav className="flex-1 space-y-6 overflow-y-auto" onClick={() => setMobileNav(false)}>
           <div>
             <p className="text-[11px] uppercase tracking-[0.18em] text-[--muted] px-3 mb-2">Library</p>
             <button
@@ -258,9 +261,15 @@ export default function Dashboard() {
         </nav>
       </aside>
 
+      {/* Mobile drawer backdrop */}
+      {mobileNav && (
+        <div className="fixed inset-0 z-30 bg-black/50 md:hidden" onClick={() => setMobileNav(false)} aria-hidden />
+      )}
+
       {/* Content */}
       <main className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-10 flex items-center gap-4 px-6 md:px-10 py-4 border-b border-[--border] bg-[--bg]/70 backdrop-blur-xl">
+        <header className="sticky top-0 z-30 flex items-center gap-3 px-4 md:px-10 py-4 border-b border-[--border] bg-[--bg]/80 backdrop-blur-xl">
+          <button onClick={() => setMobileNav((v) => !v)} className="md:hidden w-9 h-9 grid place-items-center rounded-lg border border-[--border] text-lg" aria-label="Menu">☰</button>
           <div className="text-sm font-semibold text-[--ink]">
             {view.name === "library" ? "Your library" : view.name === "new" ? "Create" : view.name === "account" ? "Account & Files" : view.name === "settings" ? "Settings" : "Story"}
           </div>
@@ -282,6 +291,7 @@ export default function Dashboard() {
             onSaved={async (s) => {
               setLibrary(await saveStory(authed, s));
               setView({ name: "view", id: s.id });
+              toast("Saved to your library!");
             }}
           />
         )}
@@ -296,8 +306,10 @@ export default function Dashboard() {
             onBack={() => setView({ name: "library" })}
             onStatus={async (id, status) => setLibrary(await updateStory(authed, id, { status }))}
             onDelete={async (id) => {
+              if (!confirm("Delete this story? This can't be undone.")) return;
               setLibrary(await deleteStory(authed, id));
               setView({ name: "library" });
+              toast("Story deleted.", "info");
             }}
           />
         )}
@@ -654,16 +666,33 @@ function EmptyState({
   onClear: () => void;
 }) {
   return (
-    <div className="card p-14 text-center">
+    <div className="card p-10 md:p-14 text-center">
       <div className="text-5xl mb-4">📖</div>
       <h2 className="text-xl font-bold mb-2">
         {hasFilter ? "No stories match your filters" : "Welcome to your studio"}
       </h2>
-      <p className="text-[--muted] mb-6 max-w-md mx-auto">
+      <p className="text-[--muted] mb-8 max-w-md mx-auto">
         {hasFilter
           ? "Try adjusting or clearing your filters."
-          : "Create your first story — for your brand, your company, or your family."}
+          : "Three steps from idea to a cinematic story."}
       </p>
+
+      {!hasFilter && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 max-w-2xl mx-auto">
+          {[
+            { n: "1", t: "Pick a category", b: "Wedding, brand, product, family — 13 to choose from." },
+            { n: "2", t: "Add your story & photos", b: "Paste what happened, upload reference images, choose your models." },
+            { n: "3", t: "Generate & share", b: "Get a cinematic story with image or film, saved to your library." },
+          ].map((s) => (
+            <div key={s.n} className="p-5 rounded-xl border border-[--border] bg-white/[0.02]">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[--accent] to-[--accent-2] grid place-items-center text-xs font-bold text-white mx-auto mb-3">{s.n}</div>
+              <h3 className="font-semibold text-sm mb-1">{s.t}</h3>
+              <p className="text-xs text-[--muted]">{s.b}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="flex gap-3 justify-center">
         {hasFilter && (
           <button onClick={onClear} className="btn btn-ghost">
@@ -695,6 +724,16 @@ function StoryViewer({
   const p = PLOTS.find((x) => x.key === story.plotKey);
   const s = story.story;
   const published = story.status === "published";
+  const { toast } = useToast();
+  async function share() {
+    const text = [s.title, s.hook, ...s.sections.map((x) => `${x.heading}\n${x.body}`), s.cta].join("\n\n");
+    try {
+      await navigator.clipboard.writeText(`“${s.title}” — ${text}`);
+      toast("Story copied — paste it anywhere to share!");
+    } catch {
+      toast("Couldn't copy automatically.", "error");
+    }
+  }
   return (
     <div className="max-w-3xl mx-auto">
       <button onClick={onBack} className="text-sm text-[--muted] hover:text-[--ink] mb-6">
@@ -709,6 +748,12 @@ function StoryViewer({
             <span className="chip capitalize">{story.tone}</span>
           )}
         </div>
+        <button
+          onClick={share}
+          className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-[--border] text-[--muted] hover:text-[--ink] hover:border-[--accent]/50"
+        >
+          ⤴ Share
+        </button>
         <button
           onClick={() => onStatus(story.id, published ? "draft" : "published")}
           className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${
@@ -746,7 +791,12 @@ function StoryViewer({
       </article>
 
       <div className="mt-4 flex justify-end">
-        <button onClick={() => onDelete(story.id)} className="text-sm text-red-400/80 hover:text-red-400">
+        <button
+          onClick={() => {
+            if (confirm("Delete this story? This can't be undone.")) onDelete(story.id);
+          }}
+          className="text-sm text-red-400/80 hover:text-red-400"
+        >
           Delete story
         </button>
       </div>

@@ -1,9 +1,20 @@
-import StoryGenerator from "@/components/StoryGenerator";
 import WaitlistForm from "@/components/WaitlistForm";
-import Gallery from "@/components/Gallery";
-import Hero3D from "@/components/Hero3D";
+import { StoryGenerator, Gallery, Hero3D } from "@/components/Lazy";
 import { CATEGORIES } from "@/lib/categories";
 import gallery from "../../public/data/gallery.json";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "AI cinematic storytelling studio — turn any moment into a story",
+  description:
+    "Turn a wedding, brand, product, or life moment into a cinematic story with an AI-generated cover image or film. 13 story categories, 25+ AI video models, prompt enhancement, and photo references — all in one studio.",
+  openGraph: {
+    title: "7stories — AI cinematic storytelling studio",
+    description:
+      "Pick a category, add photos, choose your AI models, and get a cinematic story with image or film.",
+    url: "https://7stories.com/",
+  },
+};
 
 const RING_CARDS = (gallery as any[]).slice(0, 12).map((g) => ({
   label: g.label,
@@ -23,6 +34,7 @@ export default function Home() {
           </a>
           <nav className="flex items-center gap-3">
             <a href="#examples" className="text-sm text-[--muted] hover:text-[--ink] hidden sm:block">Examples</a>
+            <a href="/templates" className="text-sm text-[--muted] hover:text-[--ink] hidden sm:block">Templates</a>
             <a href="#make" className="text-sm text-[--muted] hover:text-[--ink] hidden sm:block">Studio</a>
             <a href="/dashboard" className="btn btn-ghost text-sm">Dashboard</a>
             <a href="/login" className="btn btn-primary text-sm">Sign in</a>
@@ -142,6 +154,26 @@ export default function Home() {
           <WaitlistForm />
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="border-t border-[--border] px-6 py-10">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+          <a href="/" className="flex items-center gap-2">
+            <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-[--accent] to-[--accent-2] grid place-items-center font-black text-white">7</span>
+            <span className="font-bold tracking-tight">7stories</span>
+          </a>
+          <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-[--muted]">
+            <a href="/templates" className="hover:text-[--ink]">Templates</a>
+            <a href="/faq" className="hover:text-[--ink]">FAQ</a>
+            <a href="/terms" className="hover:text-[--ink]">Terms</a>
+            <a href="/privacy" className="hover:text-[--ink]">Privacy</a>
+            <a href="/login" className="hover:text-[--ink]">Sign in</a>
+          </nav>
+        </div>
+        <p className="max-w-6xl mx-auto mt-6 text-xs text-[--muted]/60">
+          © {new Date().getFullYear()} 7stories. Cinematic AI storytelling.
+        </p>
+      </footer>
     </main>
   );
 }
