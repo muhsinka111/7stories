@@ -172,7 +172,7 @@ export default function Dashboard() {
   return (
     <div className="flex min-h-screen bg-[--bg]">
       {/* Sidebar */}
-      <aside className="w-64 shrink-0 border-r border-[--border] bg-[--panel]/40 backdrop-blur-xl flex flex-col sticky top-0 h-screen p-5">
+      <aside className="w-64 shrink-0 border-r border-[--border] bg-[--panel]/40 backdrop-blur-xl flex flex-col sticky top-0 h-screen px-5 pt-5 pb-6 overflow-hidden">
         <button
           onClick={() => setView({ name: "library" })}
           className="flex items-center gap-2.5 mb-6 text-left"
@@ -261,7 +261,7 @@ export default function Dashboard() {
       {/* Content */}
       <main className="flex-1 flex flex-col min-w-0">
         <header className="sticky top-0 z-10 flex items-center gap-4 px-6 md:px-10 py-4 border-b border-[--border] bg-[--bg]/70 backdrop-blur-xl">
-          <div className="text-sm text-[--muted]">
+          <div className="text-sm font-semibold text-[--ink]">
             {view.name === "library" ? "Your library" : view.name === "new" ? "Create" : view.name === "account" ? "Account & Files" : view.name === "settings" ? "Settings" : "Story"}
           </div>
           <div className="ml-auto flex items-center gap-3">
@@ -348,7 +348,7 @@ function Library({
     <div className="max-w-6xl">
       {/* KPI row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <Kpi label="Total stories" value={stats.total} accent />
+        <Kpi label="Total stories" value={stats.total} />
         <Kpi label="Published" value={stats.published} />
         <Kpi label="Drafts" value={stats.drafts} />
         <Kpi label="Active arcs" value={new Set(stories.map((s) => s.plotKey)).size} />
@@ -403,11 +403,11 @@ function Library({
   );
 }
 
-function Kpi({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
+function Kpi({ label, value }: { label: string; value: number }) {
   return (
     <div className="card p-5">
       <p className="text-xs uppercase tracking-widest text-[--muted]">{label}</p>
-      <p className={`text-3xl font-black mt-2 ${accent ? "amber-grad" : ""}`}>{value}</p>
+      <p className="text-3xl font-black mt-2 text-[--ink]">{value}</p>
     </div>
   );
 }
@@ -420,15 +420,15 @@ function FilterBar({ filters, onChange }: { filters: Filters; onChange: (f: Filt
 
   return (
     <div className="card p-4 mb-6 space-y-3">
-      <div className="flex flex-wrap items-center gap-3">
-        {/* Search */}
-        <input
-          value={filters.search}
-          onChange={(e) => set({ search: e.target.value })}
-          placeholder="🔍 Search stories…"
-          className="flex-1 min-w-[200px] px-3 py-2 text-sm"
-        />
+      {/* Search (own row so dropdowns stay aligned) */}
+      <input
+        value={filters.search}
+        onChange={(e) => set({ search: e.target.value })}
+        placeholder="🔍 Search stories…"
+        className="w-full px-3 py-2 text-sm"
+      />
 
+      <div className="flex flex-wrap items-center gap-2">
         {/* Audience */}
         <Select
           value={filters.audience ?? ""}
