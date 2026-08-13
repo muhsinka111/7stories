@@ -28,6 +28,8 @@ export interface GenerateInput {
   aspectRatio?: string;
   /** Video resolution (720p, 1080p, 4K). */
   resolution?: string;
+  /** Random seed for variation (regenerate/redesign). */
+  seed?: number;
   /** Category (wedding, newborn, family, brand, …). Defaults to brand. */
   category?: string;
   /** Visual style (cinematic, photoreal, anime, …). Defaults to cinematic. */
@@ -172,7 +174,7 @@ function normalize(story: any): GeneratedStory {
 }
 
 /** Provider-aware chat call: routes to OpenAI, Anthropic, or Google by model. */
-async function chatLLM(provider: LlmProvider, model: string, system: string, user: string): Promise<string> {
+async function chatLLM(provider: LlmProvider, model: string, system: string, user: string, seed?: number): Promise<string> {
   if (provider === "anthropic") {
     const key = process.env.ANTHROPIC_API_KEY;
     if (!key) throw new Error("ANTHROPIC_API_KEY is not configured for Claude models.");
@@ -219,6 +221,7 @@ async function chatLLM(provider: LlmProvider, model: string, system: string, use
     body: JSON.stringify({
       model,
       temperature: 0.8,
+      ...(seed ? { seed } : {}),
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: system },
@@ -239,7 +242,7 @@ export async function generateStory(
   const plot = getPlot(input.plotKey);
 
   const llm = getLlmModel(input.model ?? process.env.OPENAI_MODEL);
-  const content = await chatLLM(llm.provider, llm.key, buildSystemPrompt(plot, input), buildUserPrompt(plot, input));
+  const content = await chatLLM(llm.provider, llm.key, buildSystemPrompt(plot, input), buildUserPrompt(plot, input), input.seed);
   const story = normalize(extractJSON(content));
 
   // Generate media assets when the user asked for image / video / both.
@@ -255,6 +258,7 @@ export async function generateStory(
       referenceImages: input.referenceImages,
       aspectRatio: input.aspectRatio,
       resolution: input.resolution,
+      seed: input.seed,
     });
     story.assets = assets;
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { CATEGORIES, VISUAL_STYLES, FORMATS, categoryToPlot, recommendedStyles } from "@/lib/categories";
 import { AssetMode, VIDEO_MODELS, IMAGE_MODELS } from "@/lib/media";
@@ -59,41 +59,25 @@ export default function StoryGenerator() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
+  const lastRef = useRef<any>(null);
 
-  async function generate(e: React.FormEvent) {
-    e.preventDefault();
-    // Gate generation behind sign-in: redirect to login if not authenticated.
+  async function submit(body: any) {
     const authed = await isAuthed();
     if (!authed) {
       toast("Please sign in to generate stories.", "info");
       router.push("/login");
-      return;
+      return false;
     }
     setLoading(true);
     setError(null);
     setStory(null);
+    setEditing(false);
     setPhase("Writing your story…");
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          plotKey: categoryToPlot(category),
-          category,
-          style,
-          format,
-          videoModel,
-          imageModel,
-          model: llmModel,
-          company,
-          facts,
-          referenceImages: refImages,
-          tone,
-          language,
-          aspectRatio,
-          resolution,
-          assetMode: output,
-        }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -107,18 +91,64 @@ export default function StoryGenerator() {
           setError(data.message || "Generation failed.");
           toast(data.message || "Generation failed.", "error");
         }
-        return;
+        return false;
       }
       setStory(data.story);
-      toast("Your story is ready!");
+      toast(body.seed != null ? "New variation ready!" : "Your story is ready!");
+      return true;
     } catch (err) {
       const m = err instanceof Error ? err.message : "Something went wrong.";
       setError(m);
       toast(m, "error");
+      return false;
     } finally {
       setLoading(false);
       setPhase("");
     }
+  }
+
+  async function generate(e: React.FormEvent) {
+    e.preventDefault();
+    const body = {
+      plotKey: categoryToPlot(category),
+      category,
+      style,
+      format,
+      videoModel,
+      imageModel,
+      model: llmModel,
+      company,
+      facts,
+      referenceImages: refImages,
+      tone,
+      language,
+      aspectRatio,
+      resolution,
+      assetMode: output,
+    };
+    lastRef.current = body;
+    await submit(body);
+  }
+
+  // Re-run the same story with a new random seed → a fresh variation.
+  async function regenerate() {
+    if (!lastRef.current) return;
+    await submit({ ...lastRef.current, seed: Math.floor(Math.random() * 1e6) });
+  }
+
+  // Re-run with a new seed AND the current model/style/aspect/resolution choices
+  // (change the style or engine in the form first, then Redesign for a new look).
+  async function redesign() {
+    if (!lastRef.current) return;
+    await submit({
+      ...lastRef.current,
+      style,
+      imageModel,
+      videoModel,
+      aspectRatio,
+      resolution,
+      seed: Math.floor(Math.random() * 1e6),
+    });
   }
 
   async function enhance() {
@@ -501,8 +531,22 @@ export default function StoryGenerator() {
 
         {story && (
           <article className="space-y-5">
-            {/* Edit / Copy toolbar */}
-            <div className="flex items-center justify-end gap-2">
+            {/* Edit / Copy / Regenerate / Redesign toolbar */}
+            <div className="flex items-center flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={regenerate}
+                disabled={loading}
+                className="btn btn-ghost text-sm px-3 py-1.5 disabled:opacity-60"
+                title="Re-run with a new seed for a fresh variation"
+              >🎲 Regenerate</button>
+              <button
+                type="button"
+                onClick={redesign}
+                disabled={loading}
+                className="btn btn-ghost text-sm px-3 py-1.5 disabled:opacity-60"
+                title="Change the style or engine in the form, then apply a new look"
+              >🎨 Redesign</button>
               <button
                 type="button"
                 onClick={() => {
