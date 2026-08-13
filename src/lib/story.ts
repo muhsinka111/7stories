@@ -31,6 +31,10 @@ export interface GenerateInput {
   videoModel?: string;
   /** LLM model key (OpenAI-compatible). Defaults to gpt-4o-mini. */
   model?: string;
+  /** Image model key (FAL). */
+  imageModel?: string;
+  /** Reference image URLs/data URLs used as visual input for generation. */
+  referenceImages?: string[];
   /** Asset mode: text, image, video, or both. Defaults to text. */
   assetMode?: AssetMode;
 }
@@ -211,6 +215,8 @@ export async function generateStory(
       title: story.title,
       hook: story.hook,
       videoModel: input.videoModel,
+      imageModel: input.imageModel,
+      referenceImages: input.referenceImages,
     });
     story.assets = assets;
   }

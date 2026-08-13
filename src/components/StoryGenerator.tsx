@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CATEGORIES, VISUAL_STYLES, FORMATS, categoryToPlot, recommendedStyles } from "@/lib/categories";
-import { AssetMode, VIDEO_MODELS } from "@/lib/media";
+import { AssetMode, VIDEO_MODELS, IMAGE_MODELS } from "@/lib/media";
 import { LLM_MODELS } from "@/lib/models";
 
 interface StorySection {
@@ -35,11 +35,14 @@ export default function StoryGenerator() {
   const [style, setStyle] = useState("cinematic");
   const [format, setFormat] = useState("story");
   const [videoModel, setVideoModel] = useState(VIDEO_MODELS[0].key);
+  const [imageModel, setImageModel] = useState(IMAGE_MODELS[0].key);
   const [llmModel, setLlmModel] = useState(LLM_MODELS[0].key);
   const [enhancing, setEnhancing] = useState(false);
   const [enhanceMsg, setEnhanceMsg] = useState<string | null>(null);
   const [company, setCompany] = useState("");
   const [facts, setFacts] = useState("");
+  const [refImages, setRefImages] = useState<string[]>([]);
+  const [refUrl, setRefUrl] = useState("");
   const [output, setOutput] = useState<AssetMode>("text");
   const [loading, setLoading] = useState(false);
   const [phase, setPhase] = useState("");
@@ -62,9 +65,11 @@ export default function StoryGenerator() {
           style,
           format,
           videoModel,
+          imageModel,
           model: llmModel,
           company,
           facts,
+          referenceImages: refImages,
           tone: "professional",
           assetMode: output,
         }),
@@ -116,6 +121,21 @@ export default function StoryGenerator() {
     }
   }
 
+  function addRefFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    files.slice(0, 6).forEach((f) => {
+      const reader = new FileReader();
+      reader.onload = () => setRefImages((p) => [...p, reader.result as string]);
+      reader.readAsDataURL(f);
+    });
+    e.target.value = "";
+  }
+  function addRefUrl() {
+    const u = refUrl.trim();
+    if (u && /^https?:\/\//.test(u)) setRefImages((p) => [...p, u]);
+    setRefUrl("");
+  }
+
   const cat = CATEGORIES.find((c) => c.key === category)!;
   const styleOptions = recommendedStyles(category).map((s) => VISUAL_STYLES.find((v) => v.key === s)!);
 
@@ -139,7 +159,7 @@ export default function StoryGenerator() {
                 title={c.description}
                 className={`px-3 py-2.5 rounded-lg border text-left transition-all ${
                   c.key === category
-                    ? "border-[--accent]/60 bg-[--accent]/10"
+                    ? "border-[--accent] bg-[--accent]/25 ring-1 ring-[--accent] text-[--ink]"
                     : "border-[--border] hover:bg-white/5"
                 }`}
               >
@@ -163,7 +183,7 @@ export default function StoryGenerator() {
                 onClick={() => setStyle(s.key)}
                 className={`px-3 py-1.5 rounded-lg border text-sm transition-all ${
                   s.key === style
-                    ? "border-[--accent]/60 bg-[--accent]/10"
+                    ? "border-[--accent] bg-[--accent]/25 ring-1 ring-[--accent] text-[--ink]"
                     : "border-[--border] hover:bg-white/5"
                 }`}
               >
@@ -188,7 +208,7 @@ export default function StoryGenerator() {
                 onClick={() => setFormat(f.key)}
                 className={`px-3 py-1.5 rounded-lg border text-sm transition-all ${
                   f.key === format
-                    ? "border-[--accent]/60 bg-[--accent]/10"
+                    ? "border-[--accent] bg-[--accent]/25 ring-1 ring-[--accent] text-[--ink]"
                     : "border-[--border] hover:bg-white/5"
                 }`}
               >
@@ -240,7 +260,45 @@ export default function StoryGenerator() {
 
         <div>
           <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">
-            6 · Output
+            6 · Reference images <span className="normal-case text-[--muted]/70">(optional — add photos)</span>
+          </label>
+          <div className="flex items-center gap-2 mb-3">
+            <label className="btn btn-ghost text-sm px-4 py-2 cursor-pointer shrink-0">
+              📷 Upload photos
+              <input type="file" accept="image/*" multiple onChange={addRefFiles} className="hidden" />
+            </label>
+            <input
+              value={refUrl}
+              onChange={(e) => setRefUrl(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addRefUrl(); } }}
+              placeholder="…or paste an image URL"
+              className="flex-1 px-3 py-2 text-sm"
+            />
+            <button type="button" onClick={addRefUrl} className="btn btn-ghost text-sm px-3 py-2 shrink-0">Add</button>
+          </div>
+          {refImages.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {refImages.map((src, i) => (
+                <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-[--border]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt={`reference ${i}`} className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setRefImages((p) => p.filter((_, j) => j !== i))}
+                    className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-black/80 text-white text-xs grid place-items-center"
+                  >×</button>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="text-[11px] text-[--muted] mt-2">
+            Used as visual reference for image & video generation.
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">
+            7 · Output
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {OUTPUTS.map((m) => (
@@ -250,7 +308,7 @@ export default function StoryGenerator() {
                 onClick={() => setOutput(m.key)}
                 className={`px-3 py-3 rounded-lg border text-center transition-all ${
                   m.key === output
-                    ? "border-[--accent]/60 bg-[--accent]/10"
+                    ? "border-[--accent] bg-[--accent]/25 ring-1 ring-[--accent] text-[--ink]"
                     : "border-[--border] hover:bg-white/5"
                 }`}
               >
@@ -264,25 +322,35 @@ export default function StoryGenerator() {
 
         <div>
           <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">
-            7 · Video engine
+            8 · Image engine
           </label>
-          <div className="flex flex-wrap gap-2">
-            {VIDEO_MODELS.map((v) => (
-              <button
-                type="button"
-                key={v.key}
-                onClick={() => setVideoModel(v.key)}
-                title={v.hint}
-                className={`px-3 py-1.5 rounded-lg border text-sm transition-all ${
-                  v.key === videoModel
-                    ? "border-[--accent]/60 bg-[--accent]/10"
-                    : "border-[--border] hover:bg-white/5"
-                }`}
-              >
-                {v.label} <span className="text-[10px] text-[--muted]">· {v.vendor}</span>
-              </button>
+          <select
+            value={imageModel}
+            onChange={(e) => setImageModel(e.target.value)}
+            className="w-full px-4 py-3 appearance-none cursor-pointer"
+          >
+            {IMAGE_MODELS.map((m) => (
+              <option key={m.key} value={m.key}>{m.label} — {m.vendor} ({m.hint})</option>
             ))}
-          </div>
+          </select>
+          <p className="text-[11px] text-[--muted] mt-1">
+            Used when output includes an image.
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">
+            9 · Video engine
+          </label>
+          <select
+            value={videoModel}
+            onChange={(e) => setVideoModel(e.target.value)}
+            className="w-full px-4 py-3 appearance-none cursor-pointer"
+          >
+            {VIDEO_MODELS.map((v) => (
+              <option key={v.key} value={v.key}>{v.label} — {v.vendor} ({v.hint})</option>
+            ))}
+          </select>
           <p className="text-[11px] text-[--muted] mt-1">
             Used when output includes video. Veo 3 is the most cinematic.
           </p>
@@ -290,25 +358,17 @@ export default function StoryGenerator() {
 
         <div>
           <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">
-            8 · Language model
+            10 · Language model
           </label>
-          <div className="flex flex-wrap gap-2">
+          <select
+            value={llmModel}
+            onChange={(e) => setLlmModel(e.target.value)}
+            className="w-full px-4 py-3 appearance-none cursor-pointer"
+          >
             {LLM_MODELS.map((m) => (
-              <button
-                type="button"
-                key={m.key}
-                onClick={() => setLlmModel(m.key)}
-                title={m.hint}
-                className={`px-3 py-1.5 rounded-lg border text-sm transition-all ${
-                  m.key === llmModel
-                    ? "border-[--accent]/60 bg-[--accent]/10"
-                    : "border-[--border] hover:bg-white/5"
-                }`}
-              >
-                {m.label} <span className="text-[10px] text-[--muted]">· {m.vendor}</span>
-              </button>
+              <option key={m.key} value={m.key}>{m.label} — {m.vendor} ({m.hint})</option>
             ))}
-          </div>
+          </select>
           <p className="text-[11px] text-[--muted] mt-1">
             Powers the writing. GPT-4.1 gives the best prose.
           </p>

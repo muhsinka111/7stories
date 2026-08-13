@@ -85,20 +85,19 @@ async function pollFal(requestUrl: string, key: string, timeoutMs = 120000): Pro
   throw new Error("FAL request timed out");
 }
 
-async function imageViaFAL(prompt: string): Promise<string> {
+async function imageViaFAL(prompt: string, model?: string, referenceUrls?: string[]): Promise<string> {
   const key = process.env.FAL_KEY!;
-  // High-quality cinematic image model (configurable via FAL_IMAGE_MODEL).
-  const model = process.env.FAL_IMAGE_MODEL || "fal-ai/flux-pro/v1.1-ultra";
-  const res = await fetch(`https://queue.fal.run/${model}`, {
+  // High-quality cinematic image model (configurable via FAL_IMAGE_MODEL or the user's choice).
+  const chosen = model ?? process.env.FAL_IMAGE_MODEL ?? "fal-ai/flux-pro/v1.1-ultra";
+  const payload: any = { prompt, num_images: 1 };
+  if (referenceUrls?.length) payload.reference_image_urls = referenceUrls;
+  const res = await fetch(`https://queue.fal.run/${chosen}`, {
     method: "POST",
     headers: {
       Authorization: `Key ${key}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      prompt,
-      num_images: 1,
-    }),
+    body: JSON.stringify(payload),
   });
   if (!res.ok) {
     const t = await res.text();
@@ -164,7 +163,7 @@ async function imageViaReplicate(prompt: string): Promise<string> {
   return await pollReplicateOutput(url, key);
 }
 
-export async function generateImage(prompt: string): Promise<MediaAsset> {
+export async function generateImage(prompt: string, model?: string, referenceUrls?: string[]): Promise<MediaAsset> {
   const providers = mediaProviders();
   const provider = providers.image;
   if (!provider) {
@@ -174,7 +173,7 @@ export async function generateImage(prompt: string): Promise<MediaAsset> {
   }
   const url =
     provider === "fal"
-      ? await imageViaFAL(prompt)
+      ? await imageViaFAL(prompt, model, referenceUrls)
       : provider === "openai"
         ? await imageViaOpenAI(prompt)
         : await imageViaReplicate(prompt);
@@ -192,23 +191,58 @@ export interface VideoModelOption {
 }
 export const VIDEO_MODELS: VideoModelOption[] = [
   { key: "fal-ai/veo3", label: "Veo 3", vendor: "Google", hint: "Premium cinematic motion" },
+  { key: "fal-ai/veo3/v1.0", label: "Veo 3 v1.0", vendor: "Google", hint: "Latest Veo" },
+  { key: "fal-ai/veo-2", label: "Veo 2", vendor: "Google", hint: "Strong cinematic" },
   { key: "fal-ai/kling-video/v1.6", label: "Kling 1.6", vendor: "Kuaishou", hint: "Strong motion & realism" },
+  { key: "fal-ai/kling-video/v1.5", label: "Kling 1.5", vendor: "Kuaishou", hint: "Balanced quality/speed" },
+  { key: "fal-ai/kling-video/v1.0", label: "Kling 1.0", vendor: "Kuaishou", hint: "Fast classic" },
   { key: "fal-ai/minimax-video", label: "MiniMax H3", vendor: "MiniMax", hint: "One model for all modalities" },
+  { key: "fal-ai/minimax/video-01", label: "MiniMax 01", vendor: "MiniMax", hint: "Text/image to video" },
+  { key: "fal-ai/seedance/v1.5-pro", label: "Seedance 1.5 Pro", vendor: "ByteDance", hint: "High-quality controllable" },
+  { key: "fal-ai/seedance/v1.0", label: "Seedance 1.0", vendor: "ByteDance", hint: "Reliable" },
+  { key: "fal-ai/seedance", label: "Seedance", vendor: "ByteDance", hint: "General" },
   { key: "fal-ai/wan/v2.2", label: "Wan 2.2", vendor: "Alibaba", hint: "Open, expressive, artistic" },
+  { key: "fal-ai/wan/v2.1", label: "Wan 2.1", vendor: "Alibaba", hint: "Fast open model" },
+  { key: "fal-ai/wan/2.1-t2v", label: "Wan 2.1 T2V", vendor: "Alibaba", hint: "Text to video" },
   { key: "fal-ai/ltx-video", label: "LTX Video", vendor: "Lightricks", hint: "Fast, lightweight" },
+  { key: "fal-ai/ltx-video/v0.9.6", label: "LTX 0.9.6", vendor: "Lightricks", hint: "Stable" },
+  { key: "fal-ai/hunyuan-video", label: "Hunyuan", vendor: "Tencent", hint: "Detail-rich" },
+  { key: "fal-ai/mochi-v1", label: "Mochi 1", vendor: "Genmo", hint: "Open, motion-rich" },
+  { key: "fal-ai/cogvideox/v5", label: "CogVideoX 5", vendor: "Zhipu", hint: "Balanced" },
+  { key: "fal-ai/runway-gen3/turbo", label: "Runway Gen3 Turbo", vendor: "Runway", hint: "Fast premium" },
+  { key: "fal-ai/runway/gen4-turbo", label: "Runway Gen4 Turbo", vendor: "Runway", hint: "Latest premium" },
+  { key: "fal-ai/pika/v1", label: "Pika 1.0", vendor: "Pika", hint: "Creative motion" },
 ];
 export function getVideoModel(key: string): VideoModelOption {
   return VIDEO_MODELS.find((v) => v.key === key) ?? VIDEO_MODELS[0];
 }
 
-async function videoViaFAL(prompt: string, model?: string): Promise<string> {
+/** Selectable image models available on FAL. */
+export const IMAGE_MODELS: { key: string; label: string; vendor: string; hint: string }[] = [
+  { key: "fal-ai/flux-pro/v1.1-ultra", label: "Flux Pro Ultra", vendor: "Black Forest", hint: "Highest quality cinematic" },
+  { key: "fal-ai/flux-pro/v1.1", label: "Flux Pro 1.1", vendor: "Black Forest", hint: "High quality" },
+  { key: "fal-ai/recraft-v3", label: "Recraft V3", vendor: "Recraft", hint: "Great for illustration" },
+  { key: "fal-ai/ideogram/v3", label: "Ideogram V3", vendor: "Ideogram", hint: "Great typography" },
+  { key: "fal-ai/imagen3", label: "Imagen 3", vendor: "Google", hint: "Photoreal" },
+  { key: "fal-ai/nano-banana", label: "Nano Banana", vendor: "Google", hint: "Gemini image" },
+  { key: "fal-ai/sd3.5-large", label: "SD 3.5 Large", vendor: "Stability", hint: "Open" },
+  { key: "fal-ai/flux/dev", label: "Flux Dev", vendor: "Black Forest", hint: "Open, fast" },
+  { key: "fal-ai/flux/schnell", label: "Flux Schnell", vendor: "Black Forest", hint: "Fastest" },
+];
+export function getImageModel(key: string) {
+  return IMAGE_MODELS.find((m) => m.key === key) ?? IMAGE_MODELS[0];
+}
+
+async function videoViaFAL(prompt: string, model?: string, inputImage?: string): Promise<string> {
   const key = process.env.FAL_KEY!;
   // Use the requested model, else env override, else default Veo 3.
   const chosen = model ?? process.env.FAL_VIDEO_MODEL ?? "fal-ai/veo3";
+  const payload: any = { prompt };
+  if (inputImage) payload.input_image = inputImage; // image-to-video
   const res = await fetch(`https://queue.fal.run/${chosen}`, {
     method: "POST",
     headers: { Authorization: `Key ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify(payload),
   });
   if (!res.ok) {
     const t = await res.text();
@@ -239,7 +273,7 @@ async function pollReplicateOutput(predictionUrl: string, key: string): Promise<
   throw new Error("Timed out waiting for Replicate");
 }
 
-export async function generateVideo(prompt: string, model?: string): Promise<MediaAsset> {
+export async function generateVideo(prompt: string, model?: string, inputImage?: string): Promise<MediaAsset> {
   const providers = mediaProviders();
   const provider = providers.video;
   if (!provider) {
@@ -248,7 +282,7 @@ export async function generateVideo(prompt: string, model?: string): Promise<Med
     );
   }
   const url =
-    provider === "fal" ? await videoViaFAL(prompt, model) : await (async () => {
+    provider === "fal" ? await videoViaFAL(prompt, model, inputImage) : await (async () => {
       const key = process.env.REPLICATE_API_TOKEN!;
       const res = await fetch("https://api.replicate.com/v1/models/wan-video/wan-2.1-t2v/predictions", {
         method: "POST",
@@ -269,18 +303,19 @@ export async function generateVideo(prompt: string, model?: string): Promise<Med
  */
 export async function generateStoryAssets(
   mode: AssetMode,
-  opts: { category: string; style: string; title: string; hook: string; videoModel?: string }
+  opts: { category: string; style: string; title: string; hook: string; videoModel?: string; imageModel?: string; referenceImages?: string[] }
 ): Promise<MediaResult> {
   if (mode === "text") return { assets: [], providers: mediaProviders() };
   const providers = mediaProviders();
   const prompt = visualPrompt(opts.title, opts.hook, opts.style, opts.category);
+  const ref = opts.referenceImages?.filter(Boolean) ?? [];
   const assets: MediaAsset[] = [];
 
   if (mode === "image" || mode === "both") {
-    assets.push(await generateImage(prompt));
+    assets.push(await generateImage(prompt, opts.imageModel, ref));
   }
   if (mode === "video" || mode === "both") {
-    assets.push(await generateVideo(prompt, opts.videoModel));
+    assets.push(await generateVideo(prompt, opts.videoModel, ref[0]));
   }
   return { assets, providers };
 }

@@ -14,6 +14,22 @@ const RING_CARDS = (gallery as any[]).slice(0, 12).map((g) => ({
 export default function Home() {
   return (
     <main className="flex-1">
+      {/* Nav */}
+      <header className="sticky top-0 z-50 border-b border-[--border] bg-[--bg]/70 backdrop-blur-xl">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-3.5">
+          <a href="/" className="flex items-center gap-2">
+            <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-[--accent] to-[--accent-2] grid place-items-center font-black text-white">7</span>
+            <span className="font-bold tracking-tight">7stories</span>
+          </a>
+          <nav className="flex items-center gap-3">
+            <a href="#examples" className="text-sm text-[--muted] hover:text-[--ink] hidden sm:block">Examples</a>
+            <a href="#make" className="text-sm text-[--muted] hover:text-[--ink] hidden sm:block">Studio</a>
+            <a href="/dashboard" className="btn btn-ghost text-sm">Dashboard</a>
+            <a href="/login" className="btn btn-primary text-sm">Sign in</a>
+          </nav>
+        </div>
+      </header>
+
       {/* Hero — clean, high-contrast */}
       <section className="relative py-28 md:py-36 px-6 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(900px_500px_at_70%_-10%,#1c2030_0%,var(--bg)_55%)]" />

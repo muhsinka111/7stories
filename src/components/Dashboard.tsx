@@ -45,7 +45,7 @@ function AssetModeSelector({
             key={m.key}
             onClick={() => onChange(m.key)}
             className={`px-3 py-3 rounded-lg border text-center transition-all ${
-              m.key === value ? "border-[--accent]/60 bg-[--accent]/10" : "border-[--border] hover:bg-white/5"
+              m.key === value ? "border-[--accent] bg-[--accent]/25 ring-1 ring-[--accent] text-[--ink]" : "border-[--border] hover:bg-white/5"
             }`}
           >
             <div className="text-xl mb-1">{m.icon}</div>
@@ -853,7 +853,7 @@ function CreateStory({ onSaved }: { onSaved: (s: SavedStory) => void }) {
                 key={p.key}
                 onClick={() => setPlotKey(p.key)}
                 className={`px-2 py-2 rounded-lg border text-left text-xs transition-all ${
-                  p.key === plotKey ? "border-[--accent]/60 bg-[--accent]/10" : "border-[--border] hover:bg-white/5"
+                  p.key === plotKey ? "border-[--accent] bg-[--accent]/25 ring-1 ring-[--accent] text-[--ink]" : "border-[--border] hover:bg-white/5"
                 }`}
               >
                 <div className="font-semibold leading-tight">{p.title}</div>
@@ -873,7 +873,7 @@ function CreateStory({ onSaved }: { onSaved: (s: SavedStory) => void }) {
                 key={t.key}
                 onClick={() => setTone(t.key)}
                 className={`px-3 py-1.5 rounded-lg border text-sm capitalize ${
-                  t.key === tone ? "border-[--accent]/60 bg-[--accent]/10" : "border-[--border] hover:bg-white/5"
+                  t.key === tone ? "border-[--accent] bg-[--accent]/25 ring-1 ring-[--accent] text-[--ink]" : "border-[--border] hover:bg-white/5"
                 }`}
               >
                 {t.label}
