@@ -164,6 +164,7 @@ export default function Home() {
           </a>
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-[--muted]">
             <a href="/templates" className="hover:text-[--ink]">Templates</a>
+            <a href="/credits" className="hover:text-[--ink]">Credits</a>
             <a href="/faq" className="hover:text-[--ink]">FAQ</a>
             <a href="/terms" className="hover:text-[--ink]">Terms</a>
             <a href="/privacy" className="hover:text-[--ink]">Privacy</a>

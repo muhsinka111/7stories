@@ -4,11 +4,17 @@ import { useEffect, useState } from "react";
 
 export default function SettingsPanel() {
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
+  const [credits, setCredits] = useState<number | null>(null);
+  const [plan, setPlan] = useState("free");
 
   useEffect(() => {
-    fetch("/api/auth/me")
+    fetch("/api/me")
       .then((r) => r.json())
-      .then((d) => setUser(d.user ?? null))
+      .then((d) => {
+        setUser(d.user ?? null);
+        setCredits(d.credits ?? null);
+        setPlan(d.plan ?? "free");
+      })
       .catch(() => setUser(null));
   }, []);
 
@@ -38,24 +44,24 @@ export default function SettingsPanel() {
         </div>
         <div className="flex items-center justify-between border-b border-[--border] pb-3 mb-3">
           <span className="text-[--muted]">Plan</span>
-          <span className="chip">Free</span>
+          <span className="chip capitalize">{plan}</span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-[--muted]">Credits remaining</span>
-          <span className="font-semibold">Unlimited (beta)</span>
+          <span className="font-semibold">⚡ {credits ?? "—"}</span>
         </div>
       </div>
 
-      {/* Plan */}
+      {/* Credits & plan */}
       <div className="card p-6">
-        <h3 className="font-bold mb-2">Upgrade</h3>
+        <h3 className="font-bold mb-2">Credits & plan</h3>
         <p className="text-sm text-[--muted] mb-4">
-          Pro unlocks higher resolution, faster generation, and priority rendering.
-          Payments are coming soon.
+          Every generation uses credits — text costs a few, images and films cost more.
+          Buy a pack or upgrade to a plan for monthly credits.
         </p>
-        <button disabled className="btn btn-primary justify-center disabled:opacity-50 w-full md:w-auto">
-          💳 Upgrade — coming soon
-        </button>
+        <a href="/credits" className="btn btn-primary justify-center w-full md:w-auto">
+          ⚡ Buy credits & view plans
+        </a>
       </div>
     </div>
   );

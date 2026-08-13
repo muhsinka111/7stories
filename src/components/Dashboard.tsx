@@ -274,7 +274,10 @@ export default function Dashboard() {
             {view.name === "library" ? "Your library" : view.name === "new" ? "Create" : view.name === "account" ? "Account & Files" : view.name === "settings" ? "Settings" : "Story"}
           </div>
           <div className="ml-auto flex items-center gap-3">
-            <span className="chip" title="Your credit balance">⚡ {credits ?? "—"} credits</span>
+            <a href="/credits" className="chip hover:border-[--accent]/50 hover:text-[--ink]" title="Your credit balance — click to buy more">
+              ⚡ {credits ?? "—"} credits
+            </a>
+            <a href="/credits" className="btn btn-primary text-xs px-3 py-1.5">Buy credits</a>
             <button
               onClick={() => setView({ name: "account" })}
               className="w-9 h-9 rounded-full bg-gradient-to-br from-[--accent] to-[--accent-2] grid place-items-center text-xs font-bold text-white"
