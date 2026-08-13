@@ -223,11 +223,12 @@ export function getVideoModel(key: string): VideoModelOption {
 /** Selectable image models available on FAL. */
 export const IMAGE_MODELS: { key: string; label: string; vendor: string; hint: string }[] = [
   { key: "fal-ai/flux-pro/v1.1-ultra", label: "Flux Pro Ultra", vendor: "Black Forest", hint: "Highest quality cinematic" },
+  { key: "fal-ai/nano-banana", label: "Nano Banana (Gemini 2.5 Flash)", vendor: "Google", hint: "Consistent characters across scenes" },
+  { key: "fal-ai/seedream/4.5", label: "Seedream 4.5", vendor: "ByteDance", hint: "Most consistent characters/scenes" },
   { key: "fal-ai/flux-pro/v1.1", label: "Flux Pro 1.1", vendor: "Black Forest", hint: "High quality" },
   { key: "fal-ai/recraft-v3", label: "Recraft V3", vendor: "Recraft", hint: "Great for illustration" },
   { key: "fal-ai/ideogram/v3", label: "Ideogram V3", vendor: "Ideogram", hint: "Great typography" },
   { key: "fal-ai/imagen3", label: "Imagen 3", vendor: "Google", hint: "Photoreal" },
-  { key: "fal-ai/nano-banana", label: "Nano Banana", vendor: "Google", hint: "Gemini image" },
   { key: "fal-ai/sd3.5-large", label: "SD 3.5 Large", vendor: "Stability", hint: "Open" },
   { key: "fal-ai/flux/dev", label: "Flux Dev", vendor: "Black Forest", hint: "Open, fast" },
   { key: "fal-ai/flux/schnell", label: "Flux Schnell", vendor: "Black Forest", hint: "Fastest" },
