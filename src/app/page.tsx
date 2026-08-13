@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     title: "7stories — AI cinematic storytelling studio",
     description:
       "Pick a category, add photos, choose your AI models, and get a cinematic story with image or film.",
-    url: "https://7stories.com/",
+    url: "https://www.7stories.com/",
   },
 };
 

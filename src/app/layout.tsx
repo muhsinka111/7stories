@@ -7,7 +7,7 @@ import { ToastProvider } from "@/components/Toast";
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
-const SITE = "7stories.com";
+const SITE = "www.7stories.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(`https://${SITE}`),

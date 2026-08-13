@@ -13,9 +13,9 @@
 - Users can upload reference photos, enhance prompts with AI, and save stories to a cloud library.
 
 ## Pages
-- Landing / studio: https://7stories.com/
-- Templates: https://7stories.com/templates
-- FAQ: https://7stories.com/faq
+- Landing / studio: https://www.7stories.com/
+- Templates: https://www.7stories.com/templates
+- FAQ: https://www.7stories.com/faq
 
 ## Optional
 For support or questions about 7stories, users can use the site's studio and template pages.

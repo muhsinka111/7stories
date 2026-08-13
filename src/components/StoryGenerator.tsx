@@ -165,12 +165,15 @@ export default function StoryGenerator() {
                   setStyle(recommendedStyles(c.key)[0]);
                 }}
                 title={c.description}
-                className={`px-3 py-2.5 rounded-lg border text-left transition-all ${
+                className={`relative px-3 py-2.5 rounded-lg border text-left transition-all ${
                   c.key === category
-                    ? "border-[--accent] bg-[--accent]/25 ring-1 ring-[--accent] text-[--ink]"
+                    ? "border-2 border-[--accent] bg-[--accent]/25 ring-2 ring-[--accent]/60 shadow-[0_0_0_1px_var(--accent),0_0_22px_rgba(139,124,255,0.45)] text-[--ink]"
                     : "border-[--border] hover:bg-white/5"
                 }`}
               >
+                {c.key === category && (
+                  <span className="absolute top-1 right-1 w-5 h-5 rounded-full bg-[--accent] text-white text-xs grid place-items-center font-bold">✓</span>
+                )}
                 <div className="text-lg mb-1">{c.emoji}</div>
                 <div className="font-semibold text-sm truncate">{c.label}</div>
               </button>
@@ -191,7 +194,7 @@ export default function StoryGenerator() {
                 onClick={() => setStyle(s.key)}
                 className={`px-3 py-1.5 rounded-lg border text-sm transition-all ${
                   s.key === style
-                    ? "border-[--accent] bg-[--accent]/25 ring-1 ring-[--accent] text-[--ink]"
+                    ? "border-2 border-[--accent] bg-[--accent]/25 ring-2 ring-[--accent]/60 shadow-[0_0_0_1px_var(--accent),0_0_22px_rgba(139,124,255,0.45)] text-[--ink]"
                     : "border-[--border] hover:bg-white/5"
                 }`}
               >
@@ -216,7 +219,7 @@ export default function StoryGenerator() {
                 onClick={() => setFormat(f.key)}
                 className={`px-3 py-1.5 rounded-lg border text-sm transition-all ${
                   f.key === format
-                    ? "border-[--accent] bg-[--accent]/25 ring-1 ring-[--accent] text-[--ink]"
+                    ? "border-2 border-[--accent] bg-[--accent]/25 ring-2 ring-[--accent]/60 shadow-[0_0_0_1px_var(--accent),0_0_22px_rgba(139,124,255,0.45)] text-[--ink]"
                     : "border-[--border] hover:bg-white/5"
                 }`}
               >
@@ -316,7 +319,7 @@ export default function StoryGenerator() {
                 onClick={() => setOutput(m.key)}
                 className={`px-3 py-3 rounded-lg border text-center transition-all ${
                   m.key === output
-                    ? "border-[--accent] bg-[--accent]/25 ring-1 ring-[--accent] text-[--ink]"
+                    ? "border-2 border-[--accent] bg-[--accent]/25 ring-2 ring-[--accent]/60 shadow-[0_0_0_1px_var(--accent),0_0_22px_rgba(139,124,255,0.45)] text-[--ink]"
                     : "border-[--border] hover:bg-white/5"
                 }`}
               >
