@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CATEGORIES, VISUAL_STYLES, FORMATS, categoryToPlot, recommendedStyles } from "@/lib/categories";
 import { AssetMode, VIDEO_MODELS } from "@/lib/media";
+import { LLM_MODELS } from "@/lib/models";
 
 interface StorySection {
   heading: string;
@@ -34,6 +35,9 @@ export default function StoryGenerator() {
   const [style, setStyle] = useState("cinematic");
   const [format, setFormat] = useState("story");
   const [videoModel, setVideoModel] = useState(VIDEO_MODELS[0].key);
+  const [llmModel, setLlmModel] = useState(LLM_MODELS[0].key);
+  const [enhancing, setEnhancing] = useState(false);
+  const [enhanceMsg, setEnhanceMsg] = useState<string | null>(null);
   const [company, setCompany] = useState("");
   const [facts, setFacts] = useState("");
   const [output, setOutput] = useState<AssetMode>("text");
@@ -58,6 +62,7 @@ export default function StoryGenerator() {
           style,
           format,
           videoModel,
+          model: llmModel,
           company,
           facts,
           tone: "professional",
@@ -81,6 +86,33 @@ export default function StoryGenerator() {
     } finally {
       setLoading(false);
       setPhase("");
+    }
+  }
+
+  async function enhance() {
+    if (!facts.trim()) {
+      setEnhanceMsg("Write a short idea in the box, then enhance it.");
+      return;
+    }
+    setEnhancing(true);
+    setEnhanceMsg(null);
+    try {
+      const res = await fetch("/api/enhance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idea: facts, category, style, format, model: llmModel }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setEnhanceMsg(data.error === "config_missing" ? "Enhancer needs OPENAI_API_KEY." : data.error || "Enhance failed.");
+        return;
+      }
+      setFacts(data.prompt);
+      setEnhanceMsg("✨ Enhanced — review and tweak, then generate.");
+    } catch {
+      setEnhanceMsg("Enhance failed. Try again.");
+    } finally {
+      setEnhancing(false);
     }
   }
 
@@ -190,6 +222,20 @@ export default function StoryGenerator() {
             placeholder={cat.starterPrompt}
             className="w-full px-4 py-3 resize-none"
           />
+          <div className="flex items-center justify-between gap-3 mt-2">
+            <p className="text-[11px] text-[--muted]">
+              Optional: type a rough idea, then let the AI expand it into a full prompt.
+            </p>
+            <button
+              type="button"
+              onClick={enhance}
+              disabled={enhancing}
+              className="btn btn-ghost text-sm px-4 py-2 shrink-0 disabled:opacity-60"
+            >
+              {enhancing ? "Enhancing…" : "✨ Enhance prompt"}
+            </button>
+          </div>
+          {enhanceMsg && <p className="mt-2 text-xs text-[--accent]">{enhanceMsg}</p>}
         </div>
 
         <div>
@@ -239,6 +285,32 @@ export default function StoryGenerator() {
           </div>
           <p className="text-[11px] text-[--muted] mt-1">
             Used when output includes video. Veo 3 is the most cinematic.
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">
+            8 · Language model
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {LLM_MODELS.map((m) => (
+              <button
+                type="button"
+                key={m.key}
+                onClick={() => setLlmModel(m.key)}
+                title={m.hint}
+                className={`px-3 py-1.5 rounded-lg border text-sm transition-all ${
+                  m.key === llmModel
+                    ? "border-[--accent]/60 bg-[--accent]/10"
+                    : "border-[--border] hover:bg-white/5"
+                }`}
+              >
+                {m.label} <span className="text-[10px] text-[--muted]">· {m.vendor}</span>
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] text-[--muted] mt-1">
+            Powers the writing. GPT-4.1 gives the best prose.
           </p>
         </div>
 

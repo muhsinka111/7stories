@@ -102,6 +102,7 @@ const DEFAULT_FILTERS: Filters = {
 export default function Dashboard() {
   const [library, setLibrary] = useState<SavedStory[]>([]);
   const [authed, setAuthed] = useState(false);
+  const [credits, setCredits] = useState<number | null>(null);
   const [view, setView] = useState<View>({ name: "library" });
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [mode, setMode] = useState<DisplayMode>("grid");
@@ -111,6 +112,14 @@ export default function Dashboard() {
       const a = await isAuthed();
       setAuthed(a);
       setLibrary(await loadStories(a));
+      if (a) {
+        try {
+          const me = await fetch("/api/me").then((r) => r.json());
+          setCredits(me.credits ?? null);
+        } catch {
+          setCredits(null);
+        }
+      }
     })();
   }, []);
 
@@ -256,7 +265,7 @@ export default function Dashboard() {
             {view.name === "library" ? "Your library" : view.name === "new" ? "Create" : view.name === "account" ? "Account & Files" : view.name === "settings" ? "Settings" : "Story"}
           </div>
           <div className="ml-auto flex items-center gap-3">
-            <span className="chip">⚡ Unlimited</span>
+            <span className="chip" title="Your credit balance">⚡ {credits ?? "—"} credits</span>
             <button
               onClick={() => setView({ name: "account" })}
               className="w-9 h-9 rounded-full bg-gradient-to-br from-[--accent] to-[--accent-2] grid place-items-center text-xs font-bold text-white"

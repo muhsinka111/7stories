@@ -29,6 +29,8 @@ export interface GenerateInput {
   format?: "story" | "book" | "poem" | "letter";
   /** Video model key (FAL). Defaults to Veo 3. */
   videoModel?: string;
+  /** LLM model key (OpenAI-compatible). Defaults to gpt-4o-mini. */
+  model?: string;
   /** Asset mode: text, image, video, or both. Defaults to text. */
   assetMode?: AssetMode;
 }
@@ -164,7 +166,7 @@ export async function generateStory(
 
   const apiKey = process.env.OPENAI_API_KEY;
   const baseURL = process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
-  const model = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
+  const model = input.model ?? process.env.OPENAI_MODEL ?? "gpt-4o-mini";
 
   if (!apiKey) {
     throw new Error(
