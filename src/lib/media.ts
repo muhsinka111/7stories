@@ -85,12 +85,13 @@ async function pollFal(requestUrl: string, key: string, timeoutMs = 120000): Pro
   throw new Error("FAL request timed out");
 }
 
-async function imageViaFAL(prompt: string, model?: string, referenceUrls?: string[]): Promise<string> {
+async function imageViaFAL(prompt: string, model?: string, referenceUrls?: string[], aspectRatio?: string): Promise<string> {
   const key = process.env.FAL_KEY!;
   // High-quality cinematic image model (configurable via FAL_IMAGE_MODEL or the user's choice).
   const chosen = model ?? process.env.FAL_IMAGE_MODEL ?? "fal-ai/flux-pro/v1.1-ultra";
   const payload: any = { prompt, num_images: 1 };
   if (referenceUrls?.length) payload.reference_image_urls = referenceUrls;
+  if (aspectRatio) payload.aspect_ratio = aspectRatio;
   const res = await fetch(`https://queue.fal.run/${chosen}`, {
     method: "POST",
     headers: {
@@ -111,7 +112,14 @@ async function imageViaFAL(prompt: string, model?: string, referenceUrls?: strin
   return url;
 }
 
-async function imageViaOpenAI(prompt: string): Promise<string> {
+const AR_TO_SIZE: Record<string, string> = {
+  "1:1": "1024x1024",
+  "16:9": "1536x1024",
+  "9:16": "1024x1536",
+  "4:3": "1024x1024",
+};
+
+async function imageViaOpenAI(prompt: string, aspectRatio?: string): Promise<string> {
   const key = process.env.OPENAI_API_KEY!;
   const baseURL = (process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1").replace(/\/$/, "");
   const res = await fetch(`${baseURL}/images/generations`, {
@@ -121,7 +129,7 @@ async function imageViaOpenAI(prompt: string): Promise<string> {
       model: "gpt-image-1",
       prompt,
       n: 1,
-      size: "1024x1024",
+      size: AR_TO_SIZE[aspectRatio ?? "1:1"] ?? "1024x1024",
     }),
   });
   if (!res.ok) {
@@ -163,18 +171,18 @@ async function imageViaReplicate(prompt: string): Promise<string> {
   return await pollReplicateOutput(url, key);
 }
 
-export async function generateImage(prompt: string, model?: string, referenceUrls?: string[]): Promise<MediaAsset> {
+export async function generateImage(prompt: string, model?: string, referenceUrls?: string[], aspectRatio?: string): Promise<MediaAsset> {
   const chosen = model ?? IMAGE_MODELS[0].key;
   // Route by the MODEL's provider (not the global config), so users can pick
   // between ChatGPT Image (OpenAI) and FAL models freely.
   if (imageModelProvider(chosen) === "openai") {
-    const url = await imageViaOpenAI(prompt);
+    const url = await imageViaOpenAI(prompt, aspectRatio);
     return { kind: "image", url, provider: "openai", prompt };
   }
   if (!process.env.FAL_KEY) {
     throw new MediaConfigError("This image model needs FAL_KEY in .env.");
   }
-  const url = await imageViaFAL(prompt, chosen, referenceUrls);
+  const url = await imageViaFAL(prompt, chosen, referenceUrls, aspectRatio);
   return { kind: "image", url, provider: "fal", prompt };
 }
 
@@ -246,12 +254,13 @@ export function getImageModel(key: string) {
   return IMAGE_MODELS.find((m) => m.key === key) ?? IMAGE_MODELS[0];
 }
 
-async function videoViaFAL(prompt: string, model?: string, inputImage?: string): Promise<string> {
+async function videoViaFAL(prompt: string, model?: string, inputImage?: string, resolution?: string): Promise<string> {
   const key = process.env.FAL_KEY!;
   // Use the requested model, else env override, else default Veo 3.
   const chosen = model ?? process.env.FAL_VIDEO_MODEL ?? "fal-ai/veo3";
   const payload: any = { prompt };
   if (inputImage) payload.input_image = inputImage; // image-to-video
+  if (resolution) payload.resolution = resolution; // e.g. 1080p
   const res = await fetch(`https://queue.fal.run/${chosen}`, {
     method: "POST",
     headers: { Authorization: `Key ${key}`, "Content-Type": "application/json" },
@@ -301,7 +310,7 @@ async function videoViaOpenAI(prompt: string, model: string): Promise<string> {
   throw new Error("Sora returned no video URL (async job may need setup).");
 }
 
-export async function generateVideo(prompt: string, model?: string, inputImage?: string): Promise<MediaAsset> {
+export async function generateVideo(prompt: string, model?: string, inputImage?: string, resolution?: string): Promise<MediaAsset> {
   const chosen = model ?? VIDEO_MODELS[0].key;
   // Route by the MODEL's provider so users can pick between Sora (OpenAI) and FAL models freely.
   if (videoModelProvider(chosen) === "openai") {
@@ -311,7 +320,7 @@ export async function generateVideo(prompt: string, model?: string, inputImage?:
   if (!process.env.FAL_KEY) {
     throw new MediaConfigError("This video model needs FAL_KEY in .env.");
   }
-  const url = await videoViaFAL(prompt, chosen, inputImage);
+  const url = await videoViaFAL(prompt, chosen, inputImage, resolution);
   return { kind: "video", url, provider: "fal", prompt };
 }
 
@@ -322,7 +331,7 @@ export async function generateVideo(prompt: string, model?: string, inputImage?:
  */
 export async function generateStoryAssets(
   mode: AssetMode,
-  opts: { category: string; style: string; title: string; hook: string; videoModel?: string; imageModel?: string; referenceImages?: string[] }
+  opts: { category: string; style: string; title: string; hook: string; videoModel?: string; imageModel?: string; referenceImages?: string[]; aspectRatio?: string; resolution?: string }
 ): Promise<MediaResult> {
   if (mode === "text") return { assets: [], providers: mediaProviders() };
   const providers = mediaProviders();
@@ -331,10 +340,10 @@ export async function generateStoryAssets(
   const assets: MediaAsset[] = [];
 
   if (mode === "image" || mode === "both") {
-    assets.push(await generateImage(prompt, opts.imageModel, ref));
+    assets.push(await generateImage(prompt, opts.imageModel, ref, opts.aspectRatio));
   }
   if (mode === "video" || mode === "both") {
-    assets.push(await generateVideo(prompt, opts.videoModel, ref[0]));
+    assets.push(await generateVideo(prompt, opts.videoModel, ref[0], opts.resolution));
   }
   return { assets, providers };
 }

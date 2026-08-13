@@ -22,6 +22,12 @@ export interface GenerateInput {
   audience?: "brand" | "company" | "family";
   /** Tone preference. */
   tone?: "professional" | "warm" | "bold" | "empathetic";
+  /** Output language. Defaults to English. */
+  language?: string;
+  /** Image aspect ratio (16:9, 1:1, 9:16, 4:3). */
+  aspectRatio?: string;
+  /** Video resolution (720p, 1080p, 4K). */
+  resolution?: string;
   /** Category (wedding, newborn, family, brand, …). Defaults to brand. */
   category?: string;
   /** Visual style (cinematic, photoreal, anime, …). Defaults to cinematic. */
@@ -104,6 +110,7 @@ function buildSystemPrompt(plot: Plot, input: GenerateInput): string {
     "- No meta commentary, no 'this story explores', no three-part symmetry padding.",
     "- The subject is the hero; the product or context is the instrument, not the protagonist.",
     `- Tone: ${toneLine(input.tone)}`,
+    `- Write the story in ${input.language ?? "English"}.`,
     "- Keep the whole story under ~450 words.",
   ].join("\n");
 }
@@ -246,6 +253,8 @@ export async function generateStory(
       videoModel: input.videoModel,
       imageModel: input.imageModel,
       referenceImages: input.referenceImages,
+      aspectRatio: input.aspectRatio,
+      resolution: input.resolution,
     });
     story.assets = assets;
   }

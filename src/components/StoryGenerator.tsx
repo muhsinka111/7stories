@@ -40,6 +40,10 @@ export default function StoryGenerator() {
   const [videoModel, setVideoModel] = useState(VIDEO_MODELS[0].key);
   const [imageModel, setImageModel] = useState(IMAGE_MODELS[0].key);
   const [llmModel, setLlmModel] = useState(LLM_MODELS[0].key);
+  const [tone, setTone] = useState("professional");
+  const [language, setLanguage] = useState("English");
+  const [aspectRatio, setAspectRatio] = useState("16:9");
+  const [resolution, setResolution] = useState("1080p");
   const [enhancing, setEnhancing] = useState(false);
   const [enhanceMsg, setEnhanceMsg] = useState<string | null>(null);
   const [company, setCompany] = useState("");
@@ -50,6 +54,8 @@ export default function StoryGenerator() {
   const [loading, setLoading] = useState(false);
   const [phase, setPhase] = useState("");
   const [story, setStory] = useState<GeneratedStory | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<GeneratedStory | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
@@ -82,7 +88,10 @@ export default function StoryGenerator() {
           company,
           facts,
           referenceImages: refImages,
-          tone: "professional",
+          tone,
+          language,
+          aspectRatio,
+          resolution,
           assetMode: output,
         }),
       });
@@ -395,6 +404,67 @@ export default function StoryGenerator() {
           </p>
         </div>
 
+        <div>
+          <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">11 · Tone</label>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { k: "professional", l: "Professional" },
+              { k: "warm", l: "Warm" },
+              { k: "bold", l: "Bold" },
+              { k: "empathetic", l: "Empathetic" },
+            ].map((t) => (
+              <button
+                type="button"
+                key={t.k}
+                onClick={() => setTone(t.k)}
+                className={`px-3 py-1.5 rounded-lg border text-sm transition-all ${
+                  t.k === tone
+                    ? "border-2 border-[--accent] bg-[--accent]/25 ring-2 ring-[--accent]/60 text-[--ink]"
+                    : "border-[--border] hover:bg-white/5"
+                }`}
+              >
+                {t.l}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">12 · Language</label>
+          <select value={language} onChange={(e) => setLanguage(e.target.value)} className="w-full px-4 py-3 appearance-none cursor-pointer">
+            {["English", "Turkish", "Spanish", "French", "German", "Arabic", "Italian", "Portuguese"].map((l) => (
+              <option key={l} value={l}>{l}</option>
+            ))}
+          </select>
+          <p className="text-[11px] text-[--muted] mt-1">The story is written in this language.</p>
+        </div>
+
+        <div>
+          <label className="block text-xs uppercase tracking-widest text-[--muted] mb-2">13 · Size & quality</label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+            {["16:9", "1:1", "9:16", "4:3"].map((r) => (
+              <button
+                type="button"
+                key={r}
+                onClick={() => setAspectRatio(r)}
+                className={`px-3 py-2 rounded-lg border text-center text-sm transition-all ${
+                  r === aspectRatio
+                    ? "border-2 border-[--accent] bg-[--accent]/25 ring-2 ring-[--accent]/60 text-[--ink]"
+                    : "border-[--border] hover:bg-white/5"
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+          <select value={resolution} onChange={(e) => setResolution(e.target.value)} className="w-full px-4 py-3 appearance-none cursor-pointer">
+            {["720p", "1080p", "4K"].map((s) => (
+              <option key={s} value={s}>{s === "4K" ? "4K Ultra HD" : s === "1080p" ? "1080p Full HD" : "720p HD"}</option>
+            ))}
+          </select>
+          <p className="text-[11px] text-[--muted] mt-1">Aspect ratio for images; resolution for video.</p>
+        </div>
+
         <button
           type="submit"
           disabled={loading}
@@ -431,6 +501,36 @@ export default function StoryGenerator() {
 
         {story && (
           <article className="space-y-5">
+            {/* Edit / Copy toolbar */}
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const text = [
+                    story.title,
+                    story.hook,
+                    ...story.sections.map((x) => `${x.heading}\n${x.body}`),
+                    story.cta,
+                  ].join("\n\n");
+                  navigator.clipboard?.writeText(text).then(() => toast("Story copied!")).catch(() => toast("Couldn't copy.", "error"));
+                }}
+                className="btn btn-ghost text-sm px-3 py-1.5"
+              >⤴ Copy</button>
+              {editing ? (
+                <button
+                  type="button"
+                  onClick={() => { setStory(draft); setEditing(false); toast("Changes saved!"); }}
+                  className="btn btn-primary text-sm px-3 py-1.5"
+                >✓ Done editing</button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { setDraft(JSON.parse(JSON.stringify(story))); setEditing(true); }}
+                  className="btn btn-ghost text-sm px-3 py-1.5"
+                >✏️ Edit story</button>
+              )}
+            </div>
+
             {story.assets && story.assets.length > 0 && (
               <div className="space-y-3">
                 {story.assets.map((a, i) =>
@@ -441,34 +541,70 @@ export default function StoryGenerator() {
                     <video key={i} src={a.url} controls className="w-full rounded-xl border border-[--border]" />
                   )
                 )}
-                {story.assets.length > 0 && (
-                  <p className="text-[11px] text-[--muted]">
-                    Generated with {story.assets.map((a) => a.provider).join(" · ")}
-                  </p>
-                )}
+                <p className="text-[11px] text-[--muted]">
+                  Generated with {story.assets.map((a) => a.provider).join(" · ")}
+                </p>
               </div>
             )}
 
-            <p className="text-[--muted] text-sm italic">{story.hook}</p>
-            <h3 className="text-2xl font-black amber-grad">{story.title}</h3>
-            {story.sections.map((s, i) => (
-              <section key={i}>
-                <h4 className="text-sm font-bold uppercase tracking-wider text-[--accent] mb-1">
-                  {s.heading}
-                </h4>
-                <p className="text-[--ink]/85 leading-relaxed">{s.body}</p>
-              </section>
-            ))}
-            {story.pullQuote && (
-              <blockquote className="border-l-2 border-[--accent] pl-4 italic text-[--ink]/90">
-                “{story.pullQuote}”
-              </blockquote>
+            {editing && draft ? (
+              <div className="space-y-4">
+                <label className="block text-xs uppercase tracking-widest text-[--muted]">Title</label>
+                <input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} className="w-full px-3 py-2" />
+                <label className="block text-xs uppercase tracking-widest text-[--muted]">Hook</label>
+                <textarea rows={2} value={draft.hook} onChange={(e) => setDraft({ ...draft, hook: e.target.value })} className="w-full px-3 py-2" />
+                {draft.sections.map((s, i) => (
+                  <div key={i} className="space-y-2">
+                    <label className="block text-xs uppercase tracking-widest text-[--muted]">Section {i + 1} — heading</label>
+                    <input
+                      value={s.heading}
+                      onChange={(e) => {
+                        const sections = [...draft.sections];
+                        sections[i] = { ...sections[i], heading: e.target.value };
+                        setDraft({ ...draft, sections });
+                      }}
+                      className="w-full px-3 py-2"
+                    />
+                    <label className="block text-xs uppercase tracking-widest text-[--muted]">Body</label>
+                    <textarea
+                      rows={4}
+                      value={s.body}
+                      onChange={(e) => {
+                        const sections = [...draft.sections];
+                        sections[i] = { ...sections[i], body: e.target.value };
+                        setDraft({ ...draft, sections });
+                      }}
+                      className="w-full px-3 py-2"
+                    />
+                  </div>
+                ))}
+                <label className="block text-xs uppercase tracking-widest text-[--muted]">CTA</label>
+                <input value={draft.cta} onChange={(e) => setDraft({ ...draft, cta: e.target.value })} className="w-full px-3 py-2" />
+              </div>
+            ) : (
+              <>
+                <p className="text-[--muted] text-sm italic">{story.hook}</p>
+                <h3 className="text-2xl font-black amber-grad">{story.title}</h3>
+                {story.sections.map((s, i) => (
+                  <section key={i}>
+                    <h4 className="text-sm font-bold uppercase tracking-wider text-[--accent] mb-1">
+                      {s.heading}
+                    </h4>
+                    <p className="text-[--ink]/85 leading-relaxed">{s.body}</p>
+                  </section>
+                ))}
+                {story.pullQuote && (
+                  <blockquote className="border-l-2 border-[--accent] pl-4 italic text-[--ink]/90">
+                    “{story.pullQuote}”
+                  </blockquote>
+                )}
+                <div className="pt-4 border-t border-[--border]">
+                  <p className="text-sm text-[--muted]">
+                    <span className="font-semibold text-[--ink]">Next step:</span> {story.cta}
+                  </p>
+                </div>
+              </>
             )}
-            <div className="pt-4 border-t border-[--border]">
-              <p className="text-sm text-[--muted]">
-                <span className="font-semibold text-[--ink]">Next step:</span> {story.cta}
-              </p>
-            </div>
           </article>
         )}
       </div>

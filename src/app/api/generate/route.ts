@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
 
-  const { plotKey, facts, company, tone, audience, category, style, format, videoModel, imageModel, model, referenceImages, assetMode, docIds } = body ?? {};
+  const { plotKey, facts, company, tone, audience, category, style, format, videoModel, imageModel, model, referenceImages, language, aspectRatio, resolution, assetMode, docIds } = body ?? {};
 
   if (typeof plotKey !== "string" || typeof facts !== "string") {
     return NextResponse.json(
@@ -61,6 +61,9 @@ export async function POST(request: Request) {
       imageModel: typeof imageModel === "string" ? imageModel : undefined,
       referenceImages: Array.isArray(referenceImages) ? referenceImages.filter((x) => typeof x === "string") : undefined,
       model: typeof model === "string" ? model : undefined,
+      language: typeof language === "string" ? language : undefined,
+      aspectRatio: typeof aspectRatio === "string" ? aspectRatio : undefined,
+      resolution: typeof resolution === "string" ? resolution : undefined,
       assetMode: ["text", "image", "video", "both"].includes(assetMode)
         ? assetMode
         : "text",
