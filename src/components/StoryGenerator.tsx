@@ -81,7 +81,13 @@ export default function StoryGenerator() {
       });
       const data = await res.json();
       if (!res.ok) {
-        if (data.error === "config_missing") {
+        if (data.error === "unauthorized") {
+          toast("Please sign in to generate stories.", "info");
+          router.push("/login");
+        } else if (data.error === "insufficient_credits") {
+          setError(data.message || "Not enough credits.");
+          toast(data.message || "Not enough credits.", "error");
+        } else if (data.error === "config_missing") {
           setError("Story engine isn't configured yet (OPENAI_API_KEY missing).");
           toast("Story engine isn't configured yet.", "error");
         } else if (data.error === "media_config_missing") {
@@ -94,7 +100,7 @@ export default function StoryGenerator() {
         return false;
       }
       setStory(data.story);
-      toast(body.seed != null ? "New variation ready!" : "Your story is ready!");
+      toast(data.cost ? `Your story is ready! (used ${data.cost} credits)` : "Your story is ready!");
       return true;
     } catch (err) {
       const m = err instanceof Error ? err.message : "Something went wrong.";

@@ -3,6 +3,7 @@ import { generateStory } from "@/lib/story";
 import { MediaConfigError } from "@/lib/media";
 import { getSupabaseAdmin, getUserFromToken } from "@/lib/supabase";
 import { getSessionToken } from "@/lib/session";
+import { creditCost } from "@/lib/models";
 
 /**
  * POST /api/generate
@@ -47,6 +48,31 @@ export async function POST(request: Request) {
     }
   }
 
+  // Server-side auth + credit enforcement (generation requires sign-in + balance).
+  const token = await getSessionToken();
+  const user = await getUserFromToken(token);
+  if (!user) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  const mode: string = ["text", "image", "video", "both"].includes(assetMode) ? assetMode : "text";
+  const cost =
+    creditCost(model) +
+    (mode === "image" || mode === "both" ? 5 : 0) +
+    (mode === "video" || mode === "both" ? 25 : 0);
+  const supabase = getSupabaseAdmin();
+  const { data: prof } = await supabase
+    .from("profiles")
+    .select("credits")
+    .eq("id", user.id)
+    .maybeSingle();
+  const credits = prof?.credits ?? 0;
+  if (credits < cost) {
+    return NextResponse.json(
+      { error: "insufficient_credits", credits, cost, message: `You need ${cost} credits but have ${credits}.` },
+      { status: 402 }
+    );
+  }
+
   try {
     const story = await generateStory({
       plotKey,
@@ -69,7 +95,12 @@ export async function POST(request: Request) {
         ? assetMode
         : "text",
     });
-    return NextResponse.json({ ok: true, story });
+    // Deduct credits only on full success (text + any requested media).
+    await supabase
+      .from("profiles")
+      .update({ credits: Math.max(0, credits - cost) })
+      .eq("id", user.id);
+    return NextResponse.json({ ok: true, story, cost, creditsLeft: Math.max(0, credits - cost) });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown error";
     const isConfig = msg.includes("OPENAI_API_KEY");
