@@ -164,20 +164,18 @@ async function imageViaReplicate(prompt: string): Promise<string> {
 }
 
 export async function generateImage(prompt: string, model?: string, referenceUrls?: string[]): Promise<MediaAsset> {
-  const providers = mediaProviders();
-  const provider = providers.image;
-  if (!provider) {
-    throw new MediaConfigError(
-      "Image generation needs FAL_KEY or OPENAI_API_KEY or REPLICATE_API_TOKEN in .env."
-    );
+  const chosen = model ?? IMAGE_MODELS[0].key;
+  // Route by the MODEL's provider (not the global config), so users can pick
+  // between ChatGPT Image (OpenAI) and FAL models freely.
+  if (imageModelProvider(chosen) === "openai") {
+    const url = await imageViaOpenAI(prompt);
+    return { kind: "image", url, provider: "openai", prompt };
   }
-  const url =
-    provider === "fal"
-      ? await imageViaFAL(prompt, model, referenceUrls)
-      : provider === "openai"
-        ? await imageViaOpenAI(prompt)
-        : await imageViaReplicate(prompt);
-  return { kind: "image", url, provider, prompt };
+  if (!process.env.FAL_KEY) {
+    throw new MediaConfigError("This image model needs FAL_KEY in .env.");
+  }
+  const url = await imageViaFAL(prompt, chosen, referenceUrls);
+  return { kind: "image", url, provider: "fal", prompt };
 }
 
 // ─────────────────────────── Video generation ───────────────────────────
@@ -190,6 +188,8 @@ export interface VideoModelOption {
   hint: string;
 }
 export const VIDEO_MODELS: VideoModelOption[] = [
+  { key: "sora-2", label: "Sora 2", vendor: "OpenAI", hint: "ChatGPT's video model" },
+  { key: "sora-1", label: "Sora 1", vendor: "OpenAI", hint: "OpenAI video" },
   { key: "fal-ai/veo3", label: "Veo 3", vendor: "Google", hint: "Premium cinematic motion" },
   { key: "fal-ai/veo3/v1.0", label: "Veo 3 v1.0", vendor: "Google", hint: "Latest Veo" },
   { key: "fal-ai/veo-2", label: "Veo 2", vendor: "Google", hint: "Strong cinematic" },
@@ -219,9 +219,14 @@ export const VIDEO_MODELS: VideoModelOption[] = [
 export function getVideoModel(key: string): VideoModelOption {
   return VIDEO_MODELS.find((v) => v.key === key) ?? VIDEO_MODELS[0];
 }
+/** Route a video model key to its provider. */
+export function videoModelProvider(key: string): "openai" | "fal" {
+  return key.startsWith("sora") ? "openai" : "fal";
+}
 
-/** Selectable image models available on FAL. */
+/** Selectable image models. FAL models need FAL_KEY; OpenAI models need OPENAI_API_KEY. */
 export const IMAGE_MODELS: { key: string; label: string; vendor: string; hint: string }[] = [
+  { key: "gpt-image-1", label: "ChatGPT Image (GPT-4o)", vendor: "OpenAI", hint: "ChatGPT's image model" },
   { key: "fal-ai/flux-pro/v1.1-ultra", label: "Flux Pro Ultra", vendor: "Black Forest", hint: "Highest quality cinematic" },
   { key: "fal-ai/nano-banana", label: "Nano Banana (Gemini 2.5 Flash)", vendor: "Google", hint: "Consistent characters across scenes" },
   { key: "fal-ai/seedream/4.5", label: "Seedream 4.5", vendor: "ByteDance", hint: "Most consistent characters/scenes" },
@@ -233,6 +238,10 @@ export const IMAGE_MODELS: { key: string; label: string; vendor: string; hint: s
   { key: "fal-ai/flux/dev", label: "Flux Dev", vendor: "Black Forest", hint: "Open, fast" },
   { key: "fal-ai/flux/schnell", label: "Flux Schnell", vendor: "Black Forest", hint: "Fastest" },
 ];
+/** Route an image model key to its provider. */
+export function imageModelProvider(key: string): "openai" | "fal" {
+  return key === "gpt-image-1" ? "openai" : "fal";
+}
 export function getImageModel(key: string) {
   return IMAGE_MODELS.find((m) => m.key === key) ?? IMAGE_MODELS[0];
 }
@@ -277,27 +286,33 @@ async function pollReplicateOutput(predictionUrl: string, key: string): Promise<
   throw new Error("Timed out waiting for Replicate");
 }
 
+async function videoViaOpenAI(prompt: string, model: string): Promise<string> {
+  const key = process.env.OPENAI_API_KEY!;
+  const res = await fetch("https://api.openai.com/v1/videos", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model, input: prompt }),
+  });
+  if (!res.ok) throw new Error(`Sora video failed (${res.status}): ${(await res.text()).slice(0, 300)}`);
+  const data = await res.json();
+  const url = data?.url || data?.output?.[0]?.url || data?.data?.[0]?.url;
+  if (url) return url;
+  if (data?.id) return `https://api.openai.com/v1/videos/${data.id}/content`;
+  throw new Error("Sora returned no video URL (async job may need setup).");
+}
+
 export async function generateVideo(prompt: string, model?: string, inputImage?: string): Promise<MediaAsset> {
-  const providers = mediaProviders();
-  const provider = providers.video;
-  if (!provider) {
-    throw new MediaConfigError(
-      "Video generation needs FAL_KEY or REPLICATE_API_TOKEN in .env."
-    );
+  const chosen = model ?? VIDEO_MODELS[0].key;
+  // Route by the MODEL's provider so users can pick between Sora (OpenAI) and FAL models freely.
+  if (videoModelProvider(chosen) === "openai") {
+    const url = await videoViaOpenAI(prompt, chosen);
+    return { kind: "video", url, provider: "openai", prompt };
   }
-  const url =
-    provider === "fal" ? await videoViaFAL(prompt, model, inputImage) : await (async () => {
-      const key = process.env.REPLICATE_API_TOKEN!;
-      const res = await fetch("https://api.replicate.com/v1/models/wan-video/wan-2.1-t2v/predictions", {
-        method: "POST",
-        headers: { Authorization: `Key ${key}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ input: { prompt } }),
-      });
-      if (!res.ok) throw new Error("Replicate video failed");
-      const data = await res.json();
-      return await pollReplicateOutput(data.url, key);
-    })();
-  return { kind: "video", url, provider, prompt };
+  if (!process.env.FAL_KEY) {
+    throw new MediaConfigError("This video model needs FAL_KEY in .env.");
+  }
+  const url = await videoViaFAL(prompt, chosen, inputImage);
+  return { kind: "video", url, provider: "fal", prompt };
 }
 
 /**

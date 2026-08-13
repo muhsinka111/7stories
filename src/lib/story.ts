@@ -10,6 +10,7 @@ import {
   generateStoryAssets,
   mediaProviders,
 } from "./media";
+import { getLlmModel, LlmProvider } from "./models";
 
 export interface GenerateInput {
   plotKey: string;
@@ -163,47 +164,75 @@ function normalize(story: any): GeneratedStory {
   };
 }
 
-export async function generateStory(
-  input: GenerateInput
-): Promise<GeneratedStory> {
-  const plot = getPlot(input.plotKey);
-
-  const apiKey = process.env.OPENAI_API_KEY;
-  const baseURL = process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
-  const model = input.model ?? process.env.OPENAI_MODEL ?? "gpt-4o-mini";
-
-  if (!apiKey) {
-    throw new Error(
-      "OPENAI_API_KEY is not configured. Add it to .env.local to enable story generation."
-    );
+/** Provider-aware chat call: routes to OpenAI, Anthropic, or Google by model. */
+async function chatLLM(provider: LlmProvider, model: string, system: string, user: string): Promise<string> {
+  if (provider === "anthropic") {
+    const key = process.env.ANTHROPIC_API_KEY;
+    if (!key) throw new Error("ANTHROPIC_API_KEY is not configured for Claude models.");
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({ model, max_tokens: 4096, system, messages: [{ role: "user", content: user }], temperature: 0.8 }),
+    });
+    if (!res.ok) throw new Error(`Claude generation failed (${res.status}): ${(await res.text()).slice(0, 300)}`);
+    const data = await res.json();
+    const content = data?.content?.[0]?.text ?? "";
+    if (!content) throw new Error("Empty response from Claude");
+    return content;
   }
 
+  if (provider === "google") {
+    const key = process.env.GOOGLE_API_KEY;
+    if (!key) throw new Error("GOOGLE_API_KEY is not configured for Gemini models.");
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `${system}\n\n${user}` }] }],
+          generationConfig: { temperature: 0.8 },
+        }),
+      }
+    );
+    if (!res.ok) throw new Error(`Gemini generation failed (${res.status}): ${(await res.text()).slice(0, 300)}`);
+    const data = await res.json();
+    const content = (data?.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text).join("");
+    if (!content) throw new Error("Empty response from Gemini");
+    return content;
+  }
+
+  // default: openai
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("OPENAI_API_KEY is not configured for OpenAI models.");
+  const baseURL = process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
   const res = await fetch(`${baseURL.replace(/\/$/, "")}/chat/completions`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
       model,
       temperature: 0.8,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: buildSystemPrompt(plot, input) },
-        { role: "user", content: buildUserPrompt(plot, input) },
+        { role: "system", content: system },
+        { role: "user", content: user },
       ],
     }),
   });
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`Generation failed (${res.status}): ${body.slice(0, 300)}`);
-  }
-
+  if (!res.ok) throw new Error(`Generation failed (${res.status}): ${(await res.text()).slice(0, 300)}`);
   const data = await res.json();
-  const content: string = data?.choices?.[0]?.message?.content ?? "";
+  const content = data?.choices?.[0]?.message?.content ?? "";
   if (!content) throw new Error("Empty response from model");
+  return content;
+}
 
+export async function generateStory(
+  input: GenerateInput
+): Promise<GeneratedStory> {
+  const plot = getPlot(input.plotKey);
+
+  const llm = getLlmModel(input.model ?? process.env.OPENAI_MODEL);
+  const content = await chatLLM(llm.provider, llm.key, buildSystemPrompt(plot, input), buildUserPrompt(plot, input));
   const story = normalize(extractJSON(content));
 
   // Generate media assets when the user asked for image / video / both.

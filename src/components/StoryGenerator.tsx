@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { CATEGORIES, VISUAL_STYLES, FORMATS, categoryToPlot, recommendedStyles } from "@/lib/categories";
 import { AssetMode, VIDEO_MODELS, IMAGE_MODELS } from "@/lib/media";
 import { LLM_MODELS } from "@/lib/models";
 import { useToast } from "@/components/Toast";
+import { isAuthed } from "@/lib/storiesClient";
 
 interface StorySection {
   heading: string;
@@ -50,9 +52,17 @@ export default function StoryGenerator() {
   const [story, setStory] = useState<GeneratedStory | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const router = useRouter();
 
   async function generate(e: React.FormEvent) {
     e.preventDefault();
+    // Gate generation behind sign-in: redirect to login if not authenticated.
+    const authed = await isAuthed();
+    if (!authed) {
+      toast("Please sign in to generate stories.", "info");
+      router.push("/login");
+      return;
+    }
     setLoading(true);
     setError(null);
     setStory(null);

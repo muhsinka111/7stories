@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 
   const apiKey = process.env.OPENAI_API_KEY;
   const baseURL = process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
-  const model = typeof body.model === "string" ? body.model : "gpt-4o-mini";
+  const model = "gpt-4o-mini"; // enhance always uses OpenAI (lightweight helper)
   if (!apiKey) {
     return NextResponse.json({ error: "config_missing" }, { status: 500 });
   }
