@@ -1,4 +1,3 @@
-import WaitlistForm from "@/components/WaitlistForm";
 import { StoryGenerator, Gallery, Hero3D } from "@/components/Lazy";
 import { CATEGORIES } from "@/lib/categories";
 import gallery from "../../public/data/gallery.json";
@@ -149,9 +148,12 @@ export default function Home() {
             <span className="amber-grad">Tell it beautifully.</span>
           </h2>
           <p className="text-[--muted] mb-10">
-            Join the waitlist for early access to the 7stories studio.
+            Start free — sign in and create your first cinematic story in minutes.
           </p>
-          <WaitlistForm />
+          <div className="flex gap-3 justify-center flex-wrap">
+            <a href="/login" className="btn btn-primary">✨ Start creating free</a>
+            <a href="/dashboard" className="btn btn-ghost">Go to dashboard</a>
+          </div>
         </div>
       </section>
 
