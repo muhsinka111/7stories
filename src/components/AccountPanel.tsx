@@ -159,7 +159,7 @@ export default function AccountPanel() {
           </ul>
         )}
         {selDoc && (
-          <p className="mt-4 text-xs text-[--muted] border border-[--accent]/30 bg-amber-400/5 rounded-lg px-4 py-3">
+          <p className="mt-4 text-xs text-[--muted] border border-[--accent]/30 bg-[--accent]/10 rounded-lg px-4 py-3">
             Selected as context. In the studio, paste your story prompt and this document will be read to ground your generation.
           </p>
         )}

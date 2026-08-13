@@ -246,6 +246,30 @@ export function getCategory(key: string): Category {
   return CATEGORIES.find((c) => c.key === key) ?? CATEGORIES[0];
 }
 
+/** Curated visual styles recommended for each category (first = default). */
+export const CATEGORY_STYLES: Record<CategoryKey, VisualStyle[]> = {
+  wedding: ["cinematic", "vintage", "dreamy", "photoreal"],
+  newborn: ["dreamy", "cinematic", "photoreal", "illustration"],
+  baby: ["cinematic", "anime", "dreamy", "photoreal"],
+  family: ["vintage", "cinematic", "documentary", "photoreal"],
+  elders: ["documentary", "cinematic", "vintage"],
+  books: ["illustration", "anime", "cinematic", "vintage"],
+  pets: ["cinematic", "photoreal", "anime", "illustration"],
+  brand: ["cinematic", "photoreal", "documentary"],
+  product: ["photoreal", "cinematic", "documentary"],
+  events: ["cinematic", "photoreal", "vintage", "anime"],
+  travel: ["cinematic", "documentary", "photoreal", "illustration"],
+  anniversary: ["vintage", "cinematic", "dreamy", "photoreal"],
+  memorial: ["documentary", "cinematic", "dreamy"],
+};
+
+/** Styles to show for a category (its curated set, default first, deduped). */
+export function recommendedStyles(key: string): VisualStyle[] {
+  const cat = getCategory(key);
+  const curated = CATEGORY_STYLES[key as CategoryKey] ?? [cat.visualStyle];
+  return Array.from(new Set([cat.visualStyle, ...curated]));
+}
+
 /** Map a category to a Booker plot archetype for the internal narrative engine. */
 export function categoryToPlot(key: string): string {
   const map: Record<string, string> = {

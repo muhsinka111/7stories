@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CATEGORIES, VISUAL_STYLES, FORMATS, categoryToPlot } from "@/lib/categories";
+import { CATEGORIES, VISUAL_STYLES, FORMATS, categoryToPlot, recommendedStyles } from "@/lib/categories";
 import { AssetMode, VIDEO_MODELS } from "@/lib/media";
 
 interface StorySection {
@@ -85,6 +85,7 @@ export default function StoryGenerator() {
   }
 
   const cat = CATEGORIES.find((c) => c.key === category)!;
+  const styleOptions = recommendedStyles(category).map((s) => VISUAL_STYLES.find((v) => v.key === s)!);
 
   return (
     <div className="grid lg:grid-cols-2 gap-8">
@@ -99,11 +100,14 @@ export default function StoryGenerator() {
               <button
                 type="button"
                 key={c.key}
-                onClick={() => setCategory(c.key)}
+                onClick={() => {
+                  setCategory(c.key);
+                  setStyle(recommendedStyles(c.key)[0]);
+                }}
                 title={c.description}
                 className={`px-3 py-2.5 rounded-lg border text-left transition-all ${
                   c.key === category
-                    ? "border-amber-400/60 bg-amber-400/10"
+                    ? "border-[--accent]/60 bg-[--accent]/10"
                     : "border-[--border] hover:bg-white/5"
                 }`}
               >
@@ -120,14 +124,14 @@ export default function StoryGenerator() {
             2 · Visual style
           </label>
           <div className="flex flex-wrap gap-2">
-            {VISUAL_STYLES.map((s) => (
+            {styleOptions.map((s) => (
               <button
                 type="button"
                 key={s.key}
                 onClick={() => setStyle(s.key)}
                 className={`px-3 py-1.5 rounded-lg border text-sm transition-all ${
                   s.key === style
-                    ? "border-amber-400/60 bg-amber-400/10"
+                    ? "border-[--accent]/60 bg-[--accent]/10"
                     : "border-[--border] hover:bg-white/5"
                 }`}
               >
@@ -135,6 +139,9 @@ export default function StoryGenerator() {
               </button>
             ))}
           </div>
+          <p className="text-[11px] text-[--muted] mt-1">
+            Recommended for {cat.label} — changes with your category.
+          </p>
         </div>
 
         <div>
@@ -149,7 +156,7 @@ export default function StoryGenerator() {
                 onClick={() => setFormat(f.key)}
                 className={`px-3 py-1.5 rounded-lg border text-sm transition-all ${
                   f.key === format
-                    ? "border-amber-400/60 bg-amber-400/10"
+                    ? "border-[--accent]/60 bg-[--accent]/10"
                     : "border-[--border] hover:bg-white/5"
                 }`}
               >
@@ -197,7 +204,7 @@ export default function StoryGenerator() {
                 onClick={() => setOutput(m.key)}
                 className={`px-3 py-3 rounded-lg border text-center transition-all ${
                   m.key === output
-                    ? "border-amber-400/60 bg-amber-400/10"
+                    ? "border-[--accent]/60 bg-[--accent]/10"
                     : "border-[--border] hover:bg-white/5"
                 }`}
               >
