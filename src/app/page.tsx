@@ -35,6 +35,8 @@ export default function Home() {
             <a href="#examples" className="text-sm text-[--muted] hover:text-[--ink] hidden sm:block">Examples</a>
             <a href="/templates" className="text-sm text-[--muted] hover:text-[--ink] hidden sm:block">Templates</a>
             <a href="#make" className="text-sm text-[--muted] hover:text-[--ink] hidden sm:block">Studio</a>
+            <a href="/tutorials" className="text-sm text-[--muted] hover:text-[--ink] hidden sm:block">Tutorials</a>
+            <a href="/docs" className="text-sm text-[--muted] hover:text-[--ink] hidden sm:block">Docs</a>
             <a href="/dashboard" className="btn btn-ghost text-sm">Dashboard</a>
             <a href="/login" className="btn btn-primary text-sm">Sign in</a>
           </nav>
@@ -166,6 +168,8 @@ export default function Home() {
           </a>
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-[--muted]">
             <a href="/templates" className="hover:text-[--ink]">Templates</a>
+            <a href="/tutorials" className="hover:text-[--ink]">Tutorials</a>
+            <a href="/docs" className="hover:text-[--ink]">Docs</a>
             <a href="/credits" className="hover:text-[--ink]">Credits</a>
             <a href="/faq" className="hover:text-[--ink]">FAQ</a>
             <a href="/terms" className="hover:text-[--ink]">Terms</a>
