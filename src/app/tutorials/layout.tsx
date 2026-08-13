@@ -15,7 +15,7 @@ export default function TutorialsLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen flex">
       <aside className="hidden md:flex flex-col w-60 shrink-0 border-r border-[--border] bg-[--panel]/30 px-4 py-8 sticky top-0 h-screen">
         <Link href="/" className="flex items-center gap-2 mb-8">
-          <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-[--accent] to-[--accent-2] grid place-items-center font-black text-white text-sm">7</span>
+          <img src="/logo-icon.svg" alt="7stories" className="w-8 h-8" />
           <span className="font-bold tracking-tight">7stories Tutorials</span>
         </Link>
         <p className="text-[10px] uppercase tracking-[0.2em] text-[--muted] px-2 mb-2">Learn</p>

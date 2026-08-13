@@ -16,7 +16,15 @@ export type CategoryKey =
   | "events"
   | "travel"
   | "anniversary"
-  | "memorial";
+  | "memorial"
+  | "motivation"
+  | "finance"
+  | "history"
+  | "true-crime"
+  | "cooking"
+  | "fitness"
+  | "nature"
+  | "wellness";
 
 export type StoryFormat = "story" | "video" | "book" | "poem" | "letter";
 export type VisualStyle =
@@ -240,6 +248,126 @@ export const CATEGORIES: Category[] = [
     ],
     starterPrompt: "She taught piano for 40 years and every student remembered her…",
   },
+  {
+    key: "motivation",
+    label: "Motivation",
+    emoji: "💪",
+    tagline: "High-impact motivation, made to share.",
+    description: "Inspirational stories and quote films for faceless channels that earn.",
+    whatToTell: "A journey from struggle to strength — the lesson and the call to act.",
+    visualStyle: "cinematic",
+    videoConcepts: [
+      "Faceless motivational quote animation",
+      "Cinematic sunrise-to-summit montage",
+      "A 'never give up' story film",
+    ],
+    starterPrompt: "He was told he'd never make it. Three rejections later, he built it anyway…",
+  },
+  {
+    key: "finance",
+    label: "Finance",
+    emoji: "💰",
+    tagline: "Money stories that move and teach.",
+    description: "Wealth-building stories, side-hustle wins, and financial lessons.",
+    whatToTell: "The path from financial struggle to freedom — the habits and the win.",
+    visualStyle: "cinematic",
+    videoConcepts: [
+      "Faceless wealth-building montage",
+      "A charts-to-victory story film",
+      "A 'millionaire mindset' narrative",
+    ],
+    starterPrompt: "She paid off $40k of debt in 18 months with one simple system…",
+  },
+  {
+    key: "history",
+    label: "History",
+    emoji: "🏛️",
+    tagline: "Fascinating facts, beautifully told.",
+    description: "History stories, untold events, and documentary-style films.",
+    whatToTell: "A remarkable true story from the past — the people, the stakes, the outcome.",
+    visualStyle: "documentary",
+    videoConcepts: [
+      "Documentary-style history film",
+      "Cinematic period re-enactment",
+      "A 'how it actually happened' explainer",
+    ],
+    starterPrompt: "In 1925, a small town pulled off the impossible…",
+  },
+  {
+    key: "true-crime",
+    label: "True crime",
+    emoji: "🕵️",
+    tagline: "Mysteries and investigations, narratively told.",
+    description: "True-crime and mystery story films for faceless channels.",
+    whatToTell: "The case, the clues, and the reveal — told with suspense.",
+    visualStyle: "cinematic",
+    videoConcepts: [
+      "Suspenseful mystery film",
+      "Dark cinematic investigation montage",
+      "A 'case that changed everything' narrative",
+    ],
+    starterPrompt: "On a quiet night in 2004, everything changed…",
+  },
+  {
+    key: "cooking",
+    label: "Cooking",
+    emoji: "🍳",
+    tagline: "Recipes and food stories worth watching.",
+    description: "Recipe films, food history, and kitchen stories.",
+    whatToTell: "The dish, the tradition, and the moment it comes together.",
+    visualStyle: "cinematic",
+    videoConcepts: [
+      "Satisfying recipe close-up film",
+      "Cinematic kitchen montage",
+      "A 'from market to table' food story",
+    ],
+    starterPrompt: "Grandma's baklava — six layers, one secret ingredient…",
+  },
+  {
+    key: "fitness",
+    label: "Fitness",
+    emoji: "🏋️",
+    tagline: "Transformation and workout stories.",
+    description: "Fitness journeys, training tips, and body-transformation films.",
+    whatToTell: "The transformation — the start, the struggle, the result.",
+    visualStyle: "cinematic",
+    videoConcepts: [
+      "High-energy transformation montage",
+      "Cinematic gym training film",
+      "A '100-day change' story",
+    ],
+    starterPrompt: "Ninety days ago he couldn't run a mile. Yesterday he finished a marathon…",
+  },
+  {
+    key: "nature",
+    label: "Nature",
+    emoji: "🌿",
+    tagline: "Calm, beauty, and the wild world.",
+    description: "Nature, relaxation, and meditation-style films.",
+    whatToTell: "The scene, the stillness, and the peace it brings.",
+    visualStyle: "cinematic",
+    videoConcepts: [
+      "Sweeping nature cinematic",
+      "Calm meditation montage",
+      "A 'wonders of the world' film",
+    ],
+    starterPrompt: "A hidden waterfall, a misty forest, and total silence…",
+  },
+  {
+    key: "wellness",
+    label: "Wellness",
+    emoji: "🧘",
+    tagline: "Mindset and self-improvement stories.",
+    description: "Wellness, mindfulness, and self-improvement films.",
+    whatToTell: "A shift in mindset — the habit, the change, the better life.",
+    visualStyle: "dreamy",
+    videoConcepts: [
+      "Calm wellness montage",
+      "A mindful morning-routine film",
+      "A 'habits that changed my life' story",
+    ],
+    starterPrompt: "Three habits, thirty days, one calmer mind…",
+  },
 ];
 
 export function getCategory(key: string): Category {
@@ -261,6 +389,14 @@ export const CATEGORY_STYLES: Record<CategoryKey, VisualStyle[]> = {
   travel: ["cinematic", "documentary", "photoreal", "illustration"],
   anniversary: ["vintage", "cinematic", "dreamy", "photoreal"],
   memorial: ["documentary", "cinematic", "dreamy"],
+  motivation: ["cinematic", "photoreal", "dreamy", "documentary"],
+  finance: ["cinematic", "documentary", "photoreal"],
+  history: ["documentary", "cinematic", "vintage"],
+  "true-crime": ["cinematic", "documentary", "photoreal"],
+  cooking: ["cinematic", "photoreal", "vintage", "illustration"],
+  fitness: ["cinematic", "photoreal", "documentary"],
+  nature: ["cinematic", "documentary", "dreamy", "photoreal"],
+  wellness: ["dreamy", "cinematic", "illustration", "photoreal"],
 };
 
 /** Styles to show for a category (its curated set, default first, deduped). */
@@ -286,6 +422,14 @@ export function categoryToPlot(key: string): string {
     travel: "voyage-and-return",
     anniversary: "rebirth",
     memorial: "tragedy",
+    motivation: "rags-to-riches",
+    finance: "rags-to-riches",
+    history: "the-quest",
+    "true-crime": "tragedy",
+    cooking: "comedy",
+    fitness: "the-quest",
+    nature: "voyage-and-return",
+    wellness: "rebirth",
   };
   return map[key] ?? "rags-to-riches";
 }

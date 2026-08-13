@@ -1,5 +1,8 @@
 import { StoryGenerator, Gallery, Hero3D } from "@/components/Lazy";
 import { CATEGORIES } from "@/lib/categories";
+const FACELESS_CATS = CATEGORIES.filter((c) =>
+  ["motivation", "finance", "history", "true-crime", "cooking", "fitness", "nature", "wellness"].includes(c.key)
+);
 import gallery from "../../public/data/gallery.json";
 import type { Metadata } from "next";
 
@@ -28,7 +31,7 @@ export default function Home() {
       <header className="sticky top-0 z-50 border-b border-[--border] bg-[--bg]/70 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-3.5">
           <a href="/" className="flex items-center gap-2">
-            <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-[--accent] to-[--accent-2] grid place-items-center font-black text-white">7</span>
+            <img src="/logo-icon.svg" alt="7stories" className="w-8 h-8" />
             <span className="font-bold tracking-tight">7stories</span>
           </a>
           <nav className="flex items-center gap-3">
@@ -103,6 +106,31 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Faceless content */}
+      <section className="py-24 px-6 border-t border-[--border]">
+        <div className="max-w-6xl mx-auto">
+          <p className="mono text-xs uppercase tracking-[0.3em] text-[--accent] mb-3 text-center">
+            faceless content that earns
+          </p>
+          <h2 className="text-3xl md:text-5xl font-black tracking-tight text-center mb-4">
+            Turn faceless channels into income
+          </h2>
+          <p className="text-[--muted] text-center max-w-xl mx-auto mb-12">
+            The money-making niches — motivation, finance, true crime, cooking, and more.
+            Pick one, drop in your idea, and get a ready-to-post faceless video.
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {FACELESS_CATS.map((c) => (
+              <a key={c.key} href="#make" className="card p-6 hover:border-[--accent]/50 transition-colors">
+                <div className="text-3xl mb-3">{c.emoji}</div>
+                <h3 className="font-bold mb-1">{c.label}</h3>
+                <p className="text-xs text-[--muted]">{c.tagline}</p>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Examples */}
       <Gallery />
 
@@ -163,7 +191,7 @@ export default function Home() {
       <footer className="border-t border-[--border] px-6 py-10">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <a href="/" className="flex items-center gap-2">
-            <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-[--accent] to-[--accent-2] grid place-items-center font-black text-white">7</span>
+            <img src="/logo-icon.svg" alt="7stories" className="w-8 h-8" />
             <span className="font-bold tracking-tight">7stories</span>
           </a>
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-[--muted]">

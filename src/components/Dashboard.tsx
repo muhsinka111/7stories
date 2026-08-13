@@ -182,9 +182,7 @@ export default function Dashboard() {
           onClick={() => setView({ name: "library" })}
           className="flex items-center gap-2.5 mb-6 text-left"
         >
-          <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-[--accent] to-[--accent-2] grid place-items-center font-black text-white text-lg">
-            7
-          </span>
+          <img src="/logo-icon.svg" alt="7stories" className="w-9 h-9" />
           <span className="text-lg font-bold tracking-tight">7stories</span>
         </button>
 
